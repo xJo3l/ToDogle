@@ -199,7 +199,6 @@
       color: #9b9b9b;
       transition: all 0.15s;
       cursor: pointer;
-      animation: fadeSlideIn 0.15s ease;
     }
 
     .sb-list-drag {
@@ -1086,7 +1085,8 @@
     }
 
     .toggle-inner {
-      overflow: hidden
+      overflow: hidden;
+      min-height: 0;
     }
 
     .nested-indent {
@@ -1546,9 +1546,15 @@
           </label>
         </div>
       </div>
-      <div class="modal-field">
-        <label>Deadline (optional)</label>
-        <input type="date" id="modalDeadline">
+      <div style="display:flex;gap:12px">
+        <div class="modal-field" style="flex:1">
+          <label>Start Date (optional)</label>
+          <input type="date" id="modalStartDate">
+        </div>
+        <div class="modal-field" style="flex:1">
+          <label>Deadline (optional)</label>
+          <input type="date" id="modalDeadline">
+        </div>
       </div>
       <div class="modal-actions">
         <button class="modal-cancel" id="modalCancel">Cancel</button>
@@ -1868,24 +1874,22 @@
     /* ================================================================
        RENDERING - MAIN CONTENT
        ================================================================ */
+    let lastRenderedView = null;
     function renderMainContent() {
       const mc = document.getElementById('mainContent');
-      mc.style.opacity = '0';
 
-      setTimeout(() => {
-        if (currentView === 'home') mc.innerHTML = buildHomeView();
-        else if (currentView === 'calendar') mc.innerHTML = buildCalendarView();
-        else if (currentView === 'important') mc.innerHTML = buildImportantView();
-        else if (currentView === 'overdue') mc.innerHTML = buildOverdueView();
-        else if (currentView === 'completed') mc.innerHTML = buildCompletedView();
-        else if (currentView === 'trash') mc.innerHTML = buildTrashView();
-        else {
-          const col = state.columns.find(c => c.id === currentView);
-          if (col) mc.innerHTML = buildListView(col);
-          else { currentView = 'home'; render(); }
-        }
-        mc.style.opacity = '1';
-      }, 100); // reduced delay for snappiness
+      if (currentView === 'home') mc.innerHTML = buildHomeView();
+      else if (currentView === 'calendar') mc.innerHTML = buildCalendarView();
+      else if (currentView === 'important') mc.innerHTML = buildImportantView();
+      else if (currentView === 'overdue') mc.innerHTML = buildOverdueView();
+      else if (currentView === 'completed') mc.innerHTML = buildCompletedView();
+      else if (currentView === 'trash') mc.innerHTML = buildTrashView();
+      else {
+        const col = state.columns.find(c => c.id === currentView);
+        if (col) mc.innerHTML = buildListView(col);
+        else { currentView = 'home'; render(); return; }
+      }
+      lastRenderedView = currentView;
     }
 
     function getBreadcrumb(i) {
@@ -2261,10 +2265,18 @@
       const pColor = total === 0 ? '#2a2a2a' : 'rgba(255,255,255,0.4)';
 
       let chip = '';
-      if (group.deadline) {
-        let clr = deadlineColor(group.deadline); if (hasOverdueChild(group, filter)) clr = 'red';
-        chip = `<span class="deadline-chip ${clr}">${formatDateShort(group.deadline)}</span>`;
-      } else if (hasOverdueChild(group, filter)) chip = `<span class="deadline-chip red">Overdue</span>`;
+      if (group.startDate || group.deadline) {
+        let text = '';
+        if (group.startDate && group.deadline) text = `${formatDateShort(group.startDate)} - ${formatDateShort(group.deadline)}`;
+        else if (group.startDate) text = `Starts ${formatDateShort(group.startDate)}`;
+        else text = `Due ${formatDateShort(group.deadline)}`;
+        
+        let clr = group.deadline ? deadlineColor(group.deadline) : 'gray'; 
+        if (hasOverdueChild(group, filter)) clr = 'red';
+        chip = `<span class="deadline-chip ${clr}">${text}</span>`;
+      } else if (hasOverdueChild(group, filter)) {
+        chip = `<span class="deadline-chip red">Overdue</span>`;
+      }
 
       if (isHome) {
         const col = (filter && filter !== 'all') ? false : (group.homeCollapsed !== false);
@@ -2305,6 +2317,7 @@
       ${badge}${chip}
       ${inlineProg}
       <div class="task-actions" style="opacity:1;margin-left:8px">
+        <div class="action-btn" title="Set start date">🗓️<input type="date" class="inline-due-input" data-action="start-change" data-id="${group.id}" data-col="${colId}" value="${group.startDate || ''}"></div>
         <div class="action-btn" title="Set deadline">📅<input type="date" class="inline-due-input" data-action="due-change" data-id="${group.id}" data-col="${colId}" value="${group.deadline || ''}"></div>
         <div class="action-btn trash" data-action="delete-group" data-id="${group.id}" data-col="${colId}">×</div>
       </div>
@@ -2539,6 +2552,7 @@
       else if (a === 'show-add-group') {
         modalTarget = { columnId: btn.dataset.col, parentId: btn.dataset.target };
         document.getElementById('modalName').value = '';
+        document.getElementById('modalStartDate').value = '';
         document.getElementById('modalDeadline').value = '';
         document.getElementById('groupModal').classList.add('show');
         setTimeout(() => document.getElementById('modalName')?.focus(), 50);
@@ -2686,6 +2700,15 @@
             } else {
               trg.dueDate = e.target.value || null; 
             }
+            saveState(); render(); 
+          }
+        }
+      } else if (e.target.dataset.action === 'start-change') {
+        const col = state.columns.find(c => c.id === e.target.dataset.col);
+        if (col) {
+          const trg = findById(col.items, e.target.dataset.id);
+          if (trg) { 
+            if (trg.itemType === 'group') trg.startDate = e.target.value || null;
             saveState(); render(); 
           }
         }
@@ -2919,7 +2942,7 @@
       const name = document.getElementById('modalName').value.trim();
       if (!name || !modalTarget) return;
       const type = document.querySelector('input[name="modalType"]:checked')?.value || 'persistent';
-      const nGrp = { id: generateId(), itemType: 'group', name, type, deadline: document.getElementById('modalDeadline').value || null, collapsed: false, children: [] };
+      const nGrp = { id: generateId(), itemType: 'group', name, type, startDate: document.getElementById('modalStartDate').value || null, deadline: document.getElementById('modalDeadline').value || null, collapsed: false, children: [] };
       const col = state.columns.find(c => c.id === modalTarget.columnId);
       if (col) {
         if (modalTarget.parentId === modalTarget.columnId) col.items.push(nGrp);
