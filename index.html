@@ -499,6 +499,24 @@
       color: #e8e8e8
     }
 
+    [data-action="sweep-all"]:hover {
+      background: #1e1e1e !important;
+      color: #aaa !important;
+      border-color: #3a3a3a !important;
+    }
+
+    .home-col-header:hover .list-sweep-btn {
+      opacity: 1 !important;
+    }
+
+    .home-group-header:hover .home-group-dots {
+      opacity: 1 !important;
+    }
+
+    .home-task-row:hover .home-task-dots {
+      opacity: 1 !important;
+    }
+
     .group-dropdown {
       position: absolute;
       right: 0;
@@ -537,13 +555,13 @@
     }
 
     .group-dropdown-item.disabled {
-      color: #333;
+      color: #555;
       cursor: not-allowed
     }
 
     .group-dropdown-item.disabled:hover {
       background: transparent;
-      color: #333
+      color: #555
     }
     
     .group-dropdown-divider {
@@ -1984,7 +2002,7 @@
       });
       pillsHtml += '</div>';
 
-      let contentHtml = '<div style="display:flex;flex-direction:row;gap:24px;overflow-x:auto;padding:24px 80px;">';
+      let contentHtml = '<div style="display:flex;flex-direction:row;gap:80px;overflow-x:auto;padding:24px 80px;">';
       let anyVisible = false;
 
       state.columns.forEach((col) => {
@@ -1995,10 +2013,22 @@
         
         if (colContent !== '') {
           anyVisible = true;
+          const completedInCol = countCompletedTasks(col);
           contentHtml += `
           <div style="min-width:200px;max-width:260px;flex-shrink:0;">
-            <div style="font-size:14px;font-weight:500;color:#aaa;padding-bottom:8px;border-bottom:1px solid #2a2a2a;margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(col.name)}</div>
-            <div style="display:flex;flex-direction:column;gap:4px;">${colContent}</div>
+            <div class="home-col-header" style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:500; color:#aaa; padding-bottom:8px; border-bottom:1px solid #2a2a2a; margin-bottom:12px;">
+              <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml(col.name)}</span>
+              <div style="position:relative">
+                <div class="action-btn list-sweep-btn" data-action="toggle-list-sweep-menu" data-id="${col.id}" style="font-size:16px; opacity:0; transition:opacity 0.2s; cursor:pointer;">⋯</div>
+                <div class="group-dropdown" id="listSweepMenu-${col.id}" style="right:0; top:100%;">
+                  <div class="group-dropdown-item${completedInCol === 0 ? ' disabled' : ''}" data-action="list-sweep" data-id="${col.id}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
+                    Sweep
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px;">${colContent}</div>
           </div>`;
         }
       });
@@ -2017,12 +2047,17 @@
       const pPct = overallPct * 100;
 
       return `
-        <div class="view-header" style="display:flex;flex-direction:column;padding:32px 80px 0 80px;">
+        <div class="view-header" style="display:flex;flex-direction:row;align-items:center;gap:16px;padding:32px 80px 0 80px;">
           <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;">
             <div class="view-title" style="font-size:22px;font-weight:500;">Home</div>
             ${pillsHtml}
           </div>
-          <div style="margin-top:24px;width:100%;">
+          <button data-action="sweep-all" style="margin-left:auto;background:transparent;border:0.5px solid #3a3a3a;border-radius:6px;padding:5px 14px;font-size:12px;color:#888;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:0.15s ease;" onmouseenter="this.style.background='#1e1e1e';this.style.color='#ccc';this.style.borderColor='#444'" onmouseleave="this.style.background='transparent';this.style.color='#888';this.style.borderColor='#3a3a3a'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Sweep All
+          </button>
+        </div>
+        <div style="margin-top:24px;width:100%;padding:0 80px;">
             <div style="display:flex;justify-content:flex-end;margin-bottom:6px;">
               <span style="font-size:12px;color:#555;font-weight:500;">${completedTasks}/${totalTasks}</span>
             </div>
@@ -2251,14 +2286,14 @@
         <div style="color:#9b9b9b;font-size:14px;font-weight:500;margin-top:12px">This list is empty</div>
         <div style="color:#666;font-size:12px;margin-top:4px">Click + Add to create a group or task</div>
       </div>`;
-        }
-      } else {
-        for (const item of col.items) body += renderItem(item, 0, col.id);
-      }
+    }
+  } else {
+    for (const item of col.items) body += renderItem(item, 0, col.id);
+  }
 
-      // Bottom adds
-      if (addingTaskIn === col.id) {
-        body += `<div class="inline-input-wrap" style="margin-top:16px">
+  // Bottom adds
+  if (addingTaskIn === col.id) {
+    body += `<div class="inline-input-wrap" style="margin-top:16px">
       <input class="inline-input" data-task-input="${col.id}" data-container="${col.id}" data-col="${col.id}" placeholder="Task name…" autofocus>
       <div class="inline-cancel" data-action="cancel-task">×</div></div>`;
       } else {
@@ -2287,7 +2322,7 @@
       const textCls = task.completed ? 'task-text done' : 'task-text';
 
       if (isHome) {
-        return `<div class="task-item${compCls}" data-task-id="${task.id}" style="padding:0;height:28px;background:transparent;border:none;">
+        return `<div class="task-item${compCls} home-task-row" data-task-id="${task.id}" style="padding:0;height:28px;background:transparent;border:none;position:relative;">
     <div class="${checkCls}" data-action="toggle-task" data-id="${task.id}" data-col="${colId}" style="width:16px;height:16px;border-width:1.5px;font-size:10px">✓</div>
     <div class="task-info">
       <div style="display:flex;align-items:center;min-width:0;">
@@ -2296,7 +2331,15 @@
         ${duChip ? `<div style="flex-shrink:0;">${duChip}</div>` : ''}
       </div>
     </div>
-
+    <div class="home-task-dots-wrap" style="position:relative;margin-left:4px;flex-shrink:0;">
+      <div class="action-btn home-task-dots" data-action="toggle-task-sweep-menu" data-id="${task.id}" style="opacity:0;transition:opacity 0.2s;font-size:14px;width:20px;height:20px;">⋯</div>
+      <div class="group-dropdown" id="taskSweepMenu-${task.id}" style="right:0;top:100%;min-width:140px;">
+        <div class="group-dropdown-item${task.completed ? '' : ' disabled'}" data-action="task-sweep" data-id="${task.id}" data-col="${colId}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
+          Sweep
+        </div>
+      </div>
+    </div>
   </div>`;
       }
 
@@ -2346,12 +2389,22 @@
       if (isHome) {
         const col = (filter && filter !== 'all') ? false : (group.homeCollapsed !== false);
         const arrow = col ? '▶' : '▼';
+        const completedTasksCount = countCompletedTasks(group);
         return `
-          <div class="home-group" data-group-id="${group.id}">
-            <div style="cursor:pointer;display:flex;align-items:center;padding:6px 0;" data-action="toggle-home-group" data-id="${group.id}">
+          <div class="home-group" data-group-id="${group.id}" style="position:relative">
+            <div class="home-group-header" style="cursor:pointer;display:flex;align-items:center;padding:6px 0;position:relative;" data-action="toggle-home-group" data-id="${group.id}">
               <div style="font-size:10px;color:#555;width:16px;text-align:left;transition:transform 0.2s;flex-shrink:0;">${arrow}</div>
-              <div style="font-size:14px;color:#ccc;font-weight:500;margin-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(group.name)}</div>
+              <div style="font-size:14px;color:#ccc;font-weight:500;margin-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">${escHtml(group.name)}</div>
               ${chip ? `<div style="margin-left:8px;flex-shrink:0;">${chip}</div>` : ''}
+              <div style="position:relative;margin-left:4px;flex-shrink:0;">
+                <div class="action-btn home-group-dots" data-action="toggle-group-menu" data-id="${group.id}" style="opacity:0;transition:opacity 0.2s;font-size:14px;">⋯</div>
+                <div class="group-dropdown" id="groupMenu-${group.id}" style="right:0;top:100%;">
+                  <div class="group-dropdown-item${completedTasksCount === 0 ? ' disabled' : ''}" data-action="group-sweep" data-id="${group.id}" data-col="${colId}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
+                    Sweep
+                  </div>
+                </div>
+              </div>
             </div>
             ${!col ? `<div style="padding-left:16px;display:flex;flex-direction:column;gap:0;">${childrenHtml}</div>` : ''}
           </div>
@@ -2399,9 +2452,9 @@
               <input type="date" class="inline-due-input" data-action="due-change" data-id="${group.id}" data-col="${colId}" value="${group.deadline || ''}">
             </div>
             <div class="group-dropdown-divider"></div>
-            <div class="group-dropdown-item${completedTasksCount === 0 ? ' disabled' : ''}" data-action="group-archive-completed" data-id="${group.id}" data-col="${colId}">
+            <div class="group-dropdown-item${completedTasksCount === 0 ? ' disabled' : ''}" data-action="group-sweep" data-id="${group.id}" data-col="${colId}">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
-              Archive completed
+              Sweep
             </div>
           </div>
         </div>
@@ -2780,7 +2833,72 @@
         document.querySelectorAll('.sb-dropdown, .header-dropdown, .settings-dropdown, .group-dropdown').forEach(d => d.classList.remove('show'));
         document.getElementById('groupMenu-' + btn.dataset.id)?.classList.add('show');
       }
-      else if (a === 'group-archive-completed') {
+      else if (a === 'toggle-task-sweep-menu') {
+        e.stopPropagation();
+        document.querySelectorAll('.sb-dropdown, .header-dropdown, .settings-dropdown, .group-dropdown').forEach(d => d.classList.remove('show'));
+        document.getElementById('taskSweepMenu-' + btn.dataset.id)?.classList.add('show');
+      }
+      else if (a === 'task-sweep') {
+        const colId = btn.dataset.col;
+        const taskId = btn.dataset.id;
+        for (const col of state.columns) {
+          const task = findById(col.items, taskId);
+          if (task && task.itemType === 'task' && task.completed && !task.archived) {
+            task.archived = true;
+            saveState(); render();
+            showToast('1 task swept');
+            break;
+          }
+        }
+      }
+      else if (a === 'toggle-list-sweep-menu') {
+        e.stopPropagation();
+        document.querySelectorAll('.sb-dropdown, .header-dropdown, .settings-dropdown, .group-dropdown').forEach(d => d.classList.remove('show'));
+        document.getElementById('listSweepMenu-' + btn.dataset.id)?.classList.add('show');
+      }
+      else if (a === 'sweep-all') {
+        let count = 0;
+        const sweepRecursive = (items) => {
+          for (const item of items) {
+            if (item.itemType === 'task' && item.completed && !item.archived) {
+              item.archived = true;
+              count++;
+            } else if (item.itemType === 'group' && !item.archived) {
+              sweepRecursive(item.children || []);
+            }
+          }
+        };
+        state.columns.forEach(col => sweepRecursive(col.items));
+        if (count > 0) {
+          saveState(); render();
+          showToast(`${count} tasks swept`);
+        } else {
+          showToast('Nothing to sweep', '#555');
+        }
+      }
+      else if (a === 'list-sweep') {
+        const colId = btn.dataset.id;
+        const col = state.columns.find(c => c.id === colId);
+        if (col) {
+          let count = 0;
+          const sweepRecursive = (items) => {
+            for (const item of items) {
+              if (item.itemType === 'task' && item.completed && !item.archived) {
+                item.archived = true;
+                count++;
+              } else if (item.itemType === 'group' && !item.archived) {
+                sweepRecursive(item.children || []);
+              }
+            }
+          };
+          sweepRecursive(col.items);
+          if (count > 0) {
+            saveState(); render();
+            showToast(`${count} tasks swept from ${col.name}`);
+          }
+        }
+      }
+      else if (a === 'group-sweep') {
         const colId = btn.dataset.col;
         const groupId = btn.dataset.id;
         const col = state.columns.find(c => c.id === colId);
@@ -2792,22 +2910,22 @@
               count = countCompletedTasks(group);
               group.archived = true;
             } else {
-              const archiveRecursive = (items) => {
+              const sweepRecursive = (items) => {
                 for (const item of items) {
                   if (item.itemType === 'task' && item.completed && !item.archived) {
                     item.archived = true;
                     count++;
                   } else if (item.itemType === 'group' && !item.archived) {
-                    archiveRecursive(item.children || []);
+                    sweepRecursive(item.children || []);
                   }
                 }
               };
-              archiveRecursive(group.children || []);
+              sweepRecursive(group.children || []);
             }
             if (count > 0) {
               saveState();
               render();
-              showToast(`${count} tasks archived`);
+              showToast(`${count} tasks swept`);
             }
           }
         }
