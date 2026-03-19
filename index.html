@@ -126,7 +126,7 @@
       color: #e8e8e8;
     }
 
-    .sidebar.collapsed ~ .floating-toggle {
+    .sidebar.collapsed~.floating-toggle {
       opacity: 1;
       pointer-events: auto;
       transform: translateX(0);
@@ -525,7 +525,7 @@
       border: 0.5px solid #2e2e2e;
       border-radius: 10px;
       padding: 6px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
       min-width: 200px;
       display: none;
       flex-direction: column;
@@ -563,7 +563,7 @@
       background: transparent;
       color: #555
     }
-    
+
     .group-dropdown-divider {
       border-top: 1px solid #2a2a2a;
       margin: 4px 0
@@ -598,9 +598,19 @@
       background: rgba(239, 68, 68, 0.1)
     }
 
-    .hpill { transition: all 0.15s; }
-    .hpill:hover { color: #888 !important; }
-    .hpill.active { background: #2a2a2a !important; color: #e8e8e8 !important; border-color: #3a3a3a !important; }
+    .hpill {
+      transition: all 0.15s;
+    }
+
+    .hpill:hover {
+      color: #888 !important;
+    }
+
+    .hpill.active {
+      background: #2a2a2a !important;
+      color: #e8e8e8 !important;
+      border-color: #3a3a3a !important;
+    }
 
     /* ========== CALENDAR VIEW ========== */
     .cal-view {
@@ -1583,7 +1593,10 @@
       <!-- Rendered by JS -->
     </aside>
     <button class="floating-toggle" data-action="toggle-sb-collapse">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
     </button>
     <main class="main-content" id="mainContent">
       <!-- Rendered by JS -->
@@ -2010,7 +2023,7 @@
         for (const item of col.items) {
           colContent += renderItem(item, 0, col.id, homeFilter, true);
         }
-        
+
         if (colContent !== '') {
           anyVisible = true;
           const completedInCol = countCompletedTasks(col);
@@ -2286,14 +2299,14 @@
         <div style="color:#9b9b9b;font-size:14px;font-weight:500;margin-top:12px">This list is empty</div>
         <div style="color:#666;font-size:12px;margin-top:4px">Click + Add to create a group or task</div>
       </div>`;
-    }
-  } else {
-    for (const item of col.items) body += renderItem(item, 0, col.id);
-  }
+        }
+      } else {
+        for (const item of col.items) body += renderItem(item, 0, col.id);
+      }
 
-  // Bottom adds
-  if (addingTaskIn === col.id) {
-    body += `<div class="inline-input-wrap" style="margin-top:16px">
+      // Bottom adds
+      if (addingTaskIn === col.id) {
+        body += `<div class="inline-input-wrap" style="margin-top:16px">
       <input class="inline-input" data-task-input="${col.id}" data-container="${col.id}" data-col="${col.id}" placeholder="Task name…" autofocus>
       <div class="inline-cancel" data-action="cancel-task">×</div></div>`;
       } else {
@@ -2378,8 +2391,8 @@
         if (group.startDate && group.deadline) text = `${formatDateShort(group.startDate)} - ${formatDateShort(group.deadline)}`;
         else if (group.startDate) text = `Starts ${formatDateShort(group.startDate)}`;
         else text = `Due ${formatDateShort(group.deadline)}`;
-        
-        let clr = group.deadline ? deadlineColor(group.deadline) : 'gray'; 
+
+        let clr = group.deadline ? deadlineColor(group.deadline) : 'gray';
         if (hasOverdueChild(group, filter)) clr = 'red';
         chip = `<span class="deadline-chip ${clr}">${text}</span>`;
       } else if (hasOverdueChild(group, filter)) {
@@ -2478,7 +2491,7 @@
               <div class="action-btn" data-action="clear-list-completed" data-col="${col.id}" style="width:auto;padding:0 8px;font-size:11px;color:#9b9b9b">Clear all</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:4px">`;
-        
+
         let hasItemsInList = false;
 
         const gather = (items, pathStr) => {
@@ -2524,7 +2537,7 @@
           });
           return html;
         };
-        
+
         const itemsHtml = gather(col.items, '');
         if (hasItemsInList) {
           listHtml += itemsHtml + `</div></div>`;
@@ -2996,22 +3009,22 @@
         const col = state.columns.find(c => c.id === e.target.dataset.col);
         if (col) {
           const trg = findById(col.items, e.target.dataset.id);
-          if (trg) { 
+          if (trg) {
             if (trg.itemType === 'group') {
               trg.deadline = e.target.value || null;
             } else {
-              trg.dueDate = e.target.value || null; 
+              trg.dueDate = e.target.value || null;
             }
-            saveState(); render(); 
+            saveState(); render();
           }
         }
       } else if (e.target.dataset.action === 'start-change') {
         const col = state.columns.find(c => c.id === e.target.dataset.col);
         if (col) {
           const trg = findById(col.items, e.target.dataset.id);
-          if (trg) { 
+          if (trg) {
             if (trg.itemType === 'group') trg.startDate = e.target.value || null;
-            saveState(); render(); 
+            saveState(); render();
           }
         }
       }
@@ -3038,7 +3051,7 @@
                 const grp = findById(col.items, e.target.dataset.container);
                 if (grp) grp.children.push(nTask);
               }
-              saveState(); e.target.value = ''; 
+              saveState(); e.target.value = '';
               const targetId = e.target.dataset.container;
               render();
               setTimeout(() => document.querySelector(`[data-task-input="${targetId}"]`)?.focus(), 150);
@@ -3071,7 +3084,7 @@
     document.addEventListener('dragstart', e => {
       const taskItem = e.target.closest('.task-item');
       const groupItem = e.target.closest('.toggle-group');
-      
+
       if (taskItem && taskItem.draggable) {
         draggedItemId = taskItem.dataset.taskId;
         draggedItemType = 'task';
@@ -3171,7 +3184,7 @@
         if (dropTarget) {
           dropTarget.classList.remove('drag-over-top', 'drag-over-bottom');
           const targetId = dropTarget.dataset.taskId || dropTarget.dataset.groupId;
-          
+
           const draggedEl = document.querySelector('.dragging');
           if (draggedEl && draggedEl.contains(dropTarget)) return;
 
@@ -3179,11 +3192,11 @@
             const rect = dropTarget.getBoundingClientRect();
             const mid = rect.top + rect.height / 2;
             const insertAfter = e.clientY >= mid;
-            
+
             // Search all lists for the item
             let foundItem = null;
             let sourceCol = null;
-            
+
             for (const c of state.columns) {
               const item = extractById(c.items, draggedItemId);
               if (item) {
@@ -3203,16 +3216,16 @@
                   col.items.push(foundItem);
                 }
               } else if (sourceCol) {
-                 // if we are in 'home' view, currentView is 'home'.
-                 // Let's try to find by targetId across all columns.
-                 let placed = false;
-                 for (const c of state.columns) {
-                   if (insertItemRelative(c.items, targetId, insertAfter, foundItem)) {
-                     placed = true;
-                     break;
-                   }
-                 }
-                 if (!placed) sourceCol.items.push(foundItem);
+                // if we are in 'home' view, currentView is 'home'.
+                // Let's try to find by targetId across all columns.
+                let placed = false;
+                for (const c of state.columns) {
+                  if (insertItemRelative(c.items, targetId, insertAfter, foundItem)) {
+                    placed = true;
+                    break;
+                  }
+                }
+                if (!placed) sourceCol.items.push(foundItem);
               }
               saveState();
               render();
