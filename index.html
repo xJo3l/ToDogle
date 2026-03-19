@@ -2296,11 +2296,7 @@
         ${duChip ? `<div style="flex-shrink:0;">${duChip}</div>` : ''}
       </div>
     </div>
-    <div class="task-actions">
-      <div class="action-btn star${starActive}" data-action="toggle-important" data-id="${task.id}" data-col="${colId}" style="width:20px;height:20px;font-size:12px">★</div>
-      <div class="action-btn" title="Set due date" style="width:20px;height:20px;font-size:12px" onclick="try{this.querySelector('input').showPicker()}catch(e){}">📅<input type="date" class="inline-due-input" data-action="due-change" data-id="${task.id}" data-col="${colId}" value="${task.dueDate || ''}"></div>
-      <div class="action-btn trash" data-action="delete-task" data-id="${task.id}" data-col="${colId}" style="width:20px;height:20px;font-size:12px">×</div>
-    </div>
+
   </div>`;
       }
 
