@@ -2062,20 +2062,31 @@
       });
       pillsHtml += '</div>';
 
-      let contentHtml = '<div style="display:flex;flex-direction:row;gap:80px;overflow-x:auto;padding:24px 80px;">';
-      let anyVisible = false;
-
+      let contentHtml = '<div style="display:flex;flex-wrap:wrap;gap:24px;padding:24px 80px;">';
+      
+      let visibleCols = [];
       state.columns.forEach((col) => {
         let colContent = '';
         for (const item of col.items) {
           colContent += renderItem(item, 0, col.id, homeFilter, true);
         }
-
         if (colContent !== '') {
-          anyVisible = true;
+          visibleCols.push({ col, colContent });
+        }
+      });
+
+      const anyVisible = visibleCols.length > 0;
+      
+      if (anyVisible) {
+        const cStyle = visibleCols.length <= 3 
+          ? 'flex: 1 1 calc(20% - 24px); min-width: 260px; max-width: 320px;' 
+          : 'flex: 1 1 calc(20% - 24px); min-width: 200px; max-width: calc(20% - 24px);';
+          
+        visibleCols.forEach(data => {
+          const col = data.col;
           const completedInCol = countCompletedTasks(col);
           contentHtml += `
-          <div style="min-width:200px;max-width:260px;flex-shrink:0;">
+          <div style="${cStyle}">
             <div class="home-col-header" style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:500; color:#aaa; padding-bottom:8px; border-bottom:1px solid #2a2a2a; margin-bottom:12px;">
               <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml(col.name)}</span>
               <div style="position:relative">
@@ -2088,10 +2099,10 @@
                 </div>
               </div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:16px;">${colContent}</div>
+            <div style="display:flex;flex-direction:column;gap:16px;">${data.colContent}</div>
           </div>`;
-        }
-      });
+        });
+      }
       contentHtml += '</div>';
 
       if (!anyVisible) {
@@ -2478,8 +2489,10 @@
           <div class="home-group" data-group-id="${group.id}" style="position:relative">
             <div class="home-group-header" style="cursor:pointer;display:flex;align-items:center;padding:6px 0;position:relative;" data-action="toggle-home-group" data-id="${group.id}">
               <div style="font-size:10px;color:#555;width:16px;text-align:left;transition:transform 0.2s;flex-shrink:0;">${arrow}</div>
-              <div class="home-group-name" style="font-size:14px;color:#ccc;font-weight:500;margin-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">${escHtml(group.name)}</div>
-              ${chip ? `<div style="margin-left:8px;flex-shrink:0;">${chip}</div>` : ''}
+              <div style="display:flex;align-items:center;min-width:0;flex:1;margin-left:8px;">
+                <div class="home-group-name" style="font-size:14px;color:#ccc;font-weight:500;flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(group.name)}</div>
+                ${chip ? `<div style="margin-left:8px;flex-shrink:0;">${chip}</div>` : ''}
+              </div>
               <div style="position:relative;margin-left:4px;flex-shrink:0;">
                 <div class="action-btn home-group-dots" data-action="toggle-group-menu" data-id="${group.id}" style="opacity:0;transition:opacity 0.2s;font-size:14px;">⋯</div>
                 <div class="group-dropdown" id="groupMenu-${group.id}" style="right:0;top:100%;">
@@ -2519,7 +2532,7 @@
 
       const badge = `<span class="type-badge ${group.type}" style="margin-left:8px">${group.type === 'persistent' ? 'STAYS' : 'AUTO-ARCHIVE'}</span>`;
 
-      const inlineProg = `<div style="flex:1"></div><div style="width:40px;height:4px;border-radius:999px;background:#2a2a2a;overflow:hidden;flex-shrink:0"><div style="height:100%;width:${pPct}%;background:${pColor};transition:width 0.3s"></div></div><div style="font-size:11px;color:#555;margin-left:8px;font-weight:500;min-width:26px;text-align:right">${completed}/${total}</div>`;
+      const inlineProg = `<div style="width:40px;height:4px;border-radius:999px;background:#2a2a2a;overflow:hidden;flex-shrink:0"><div style="height:100%;width:${pPct}%;background:${pColor};transition:width 0.3s"></div></div><div style="font-size:11px;color:#555;margin-left:8px;font-weight:500;min-width:26px;text-align:right">${completed}/${total}</div>`;
 
       const completedTasksCount = countCompletedTasks(group);
       const isArchiveDisabled = completedTasksCount === 0 ? ' style="color:#444;pointer-events:none"' : '';
@@ -2528,8 +2541,10 @@
   <div class="toggle-group" data-group-id="${group.id}" draggable="true">
     <div class="toggle-header" data-action="toggle-collapse" data-id="${group.id}">
       <div class="toggle-arrow${col ? ' collapsed' : ''}" data-arrow-id="${group.id}">▼</div>
-      <div class="toggle-name">${escHtml(group.name)}</div>
-      ${badge}${chip}
+      <div style="display:flex;align-items:center;min-width:0;flex:1;">
+        <div class="toggle-name" style="flex:0 1 auto;">${escHtml(group.name)}</div>
+        ${badge}${chip ? `<div style="flex-shrink:0;">${chip}</div>` : ''}
+      </div>
       ${inlineProg}
       <div class="task-actions" style="opacity:1;margin-left:8px;position:relative;z-index:2">
         <div style="position:relative">
