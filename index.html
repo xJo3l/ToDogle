@@ -1598,6 +1598,104 @@
       text-align: center;
       padding: 12px 0
     }
+    @media (max-width: 768px) {
+      /* Padding and spacing: 80px to 16px, vertical -30% */
+      .view-header {
+        padding: 22px 16px 0 16px !important;
+      }
+      .list-content, .flat-list {
+        padding: 11px 16px 28px !important;
+      }
+      /* Content div inside home view */
+      .home-view > div {
+        padding: 17px 16px !important;
+      }
+      /* View header + div for home progress bar container */
+      #mainContent > .view-header + div {
+        padding: 0 16px !important;
+      }
+
+      /* Home view: Header row stacks vertically */
+      #mainContent > .view-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 16px !important;
+      }
+      /* Filter pills wrap onto one row, padding 2px 8px */
+      .hpill {
+        padding: 2px 8px !important;
+      }
+      .view-header > div:first-child > div:last-child {
+        flex-wrap: wrap !important;
+      }
+
+      /* Sweep All button below that, each full width */
+      button[data-action="sweep-all"] {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        justify-content: center !important;
+        margin-left: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Columns container: single column full width, no horizontal scroll */
+      .home-view > div > div {
+        flex: 1 1 100% !important;
+        max-width: 100% !important;
+        min-width: 100% !important;
+      }
+
+      /* Typography */
+      .view-title, .home-col-header span { 
+        font-size: 18px !important; 
+        margin-left: 44px !important; /* Ensure titles avoid the floating toggle on mobile */
+      }
+      .cal-view > div:first-child > div:first-child {
+        margin-left: 44px !important;
+      }
+      .toggle-name, .home-group-name { font-size: 13px !important; }
+      .task-text, .task-name-txt, .home-task-name { font-size: 13px !important; }
+      .sb-nav-item, .sb-list-item { font-size: 12px !important; }
+      .sb-list-name-txt { font-size: 12px !important; }
+      .deadline-chip { font-size: 10px !important; }
+      .type-badge { font-size: 9px !important; }
+      .top-add-btn, .add-btn, .modal-create, .modal-cancel, .inline-cancel { font-size: 12px !important; }
+
+      /* Components: All tap targets minimum 44px height */
+      .action-btn, button, .sb-nav-item, .sb-list-item, .toggle-header, .task-item, .hpill {
+        min-height: 44px !important;
+      }
+      .task-checkbox {
+        min-height: 32px !important;
+        min-width: 32px !important;
+        width: 32px !important;
+        height: 32px !important;
+      }
+
+      /* Input boxes full width */
+      .inline-input, input[type="text"], input[type="date"] {
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Modal width 90vw */
+      .modal { width: 90vw !important; }
+
+      /* Toggle headers padding 8px 10px */
+      .toggle-header { padding: 8px 10px !important; }
+
+      /* Task items padding 6px 10px */
+      .task-item { padding: 6px 10px !important; }
+
+      /* Calendar grid cells min-height 60px, chip font size 11px */
+      .cal-view > div:last-child > div, .cal-cell-new {
+        min-height: 60px !important;
+      }
+      .cal-task-chip-new {
+        font-size: 11px !important;
+      }
+    }
   </style>
 </head>
 
@@ -1740,11 +1838,12 @@
       return months[d.getMonth()] + ' ' + d.getDate();
     }
 
-    function deadlineColor(dateStr) {
+    function deadlineColor(dateStr, isHome = false, isCompleted = false) {
+      if (isCompleted) return 'gray';
       const dl = parseDate(dateStr); if (!dl) return '';
       const diff = daysBetween(today(), dl);
       if (diff < 0) return 'red';
-      if (diff <= 2) return 'red';
+      if (diff <= 2) return isHome ? 'gray' : 'red';
       if (diff <= 5) return 'yellow';
       return 'gray';
     }
@@ -1793,11 +1892,12 @@
       setTimeout(() => { inp.focus(); inp.select(); }, 50);
     }
 
-    function isTaskVisible(task, filter) {
+    function isTaskVisible(task, filter, inheritedDeadline = null) {
       if (!filter || filter === 'all') return true;
-      if (!task.dueDate) return false;
+      const effDue = task.dueDate || inheritedDeadline;
+      if (!effDue) return false;
       const t = today();
-      const d = parseDate(task.dueDate);
+      const d = parseDate(effDue);
       if (!d) return false;
       const diff = daysBetween(t, d);
       if (filter === 'today' && diff === 0) return true;
@@ -1815,17 +1915,18 @@
       return count;
     }
 
-    function getProgress(group, filter) {
+    function getProgress(group, filter, inheritedDeadline = null) {
       if (!group.children) return { completed: 0, total: 0 };
       let total = 0, completed = 0;
+      const currentDeadline = group.deadline || inheritedDeadline;
       for (const c of group.children) {
         if (c.itemType === 'task') {
-          if (isTaskVisible(c, filter) && !c.archived) {
+          if (isTaskVisible(c, filter, currentDeadline) && !c.archived) {
             total++;
             if (c.completed) completed++;
           }
         } else if (c.itemType === 'group' && !c.archived) {
-          const pg = getProgress(c, filter);
+          const pg = getProgress(c, filter, currentDeadline);
           if (pg.total > 0) {
             total++;
             if (pg.completed === pg.total) completed++;
@@ -1835,20 +1936,24 @@
       return { completed, total };
     }
 
-    function isGroupComplete(group, filter) {
-      const pg = getProgress(group, filter);
+    function isGroupComplete(group, filter, inheritedDeadline = null) {
+      const pg = getProgress(group, filter, inheritedDeadline);
       return pg.total > 0 && pg.completed === pg.total;
     }
 
-    function hasOverdueChild(group, filter) {
+    function hasOverdueChild(group, filter, inheritedDeadline = null) {
       if (!group.children) return false;
       const t = today();
+      const currentDeadline = group.deadline || inheritedDeadline;
       for (const c of group.children) {
-        if (c.itemType === 'task' && !c.completed && c.dueDate && isTaskVisible(c, filter)) {
-          const d = parseDate(c.dueDate);
-          if (d && d < t) return true;
+        if (c.itemType === 'task' && !c.completed && isTaskVisible(c, filter, currentDeadline)) {
+          const effDue = c.dueDate || currentDeadline;
+          if (effDue) {
+            const d = parseDate(effDue);
+            if (d && d < t) return true;
+          }
         }
-        if (c.itemType === 'group' && hasOverdueChild(c, filter)) return true;
+        if (c.itemType === 'group' && hasOverdueChild(c, filter, currentDeadline)) return true;
       }
       return false;
     }
@@ -1866,15 +1971,16 @@
     /* ================================================================
        DATA AGGREGATORS
        ================================================================ */
-    function getAllTasksNested(items, path, colName, colId, result) {
+    function getAllTasksNested(items, path, colName, colId, result, inheritedDeadline = null) {
       for (const item of items) {
         if (item.itemType === 'task') {
-          result.push({ ...item, path: [...path], colName, colId });
+          result.push({ ...item, path: [...path], colName, colId, effectiveDueDate: item.dueDate || inheritedDeadline });
         } else if (item.itemType === 'group') {
           if (item.deadline) {
             result.push({ ...item, path: [...path], colName, colId }); // group itself as deadline item
           }
-          getAllTasksNested(item.children || [], [...path, item.name], colName, colId, result);
+          const currentDeadline = item.deadline || inheritedDeadline;
+          getAllTasksNested(item.children || [], [...path, item.name], colName, colId, result, currentDeadline);
         }
       }
     }
@@ -1929,7 +2035,7 @@
 
       // Count Overdue
       const t = today();
-      const overdueCount = getAll().filter(i => i.itemType === 'task' && !i.completed && i.dueDate && parseDate(i.dueDate) < t).length;
+      const overdueCount = getAll().filter(i => i.itemType === 'task' && !i.completed && (i.effectiveDueDate || i.dueDate) && parseDate(i.effectiveDueDate || i.dueDate) < t).length;
       const ovdBadge = overdueCount > 0 ? `<div class="sb-badge">${overdueCount}</div>` : '';
 
       const svgHome = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`;
@@ -2218,7 +2324,7 @@
         for (let d = 1; d <= daysInMonth; d++) {
           const dt = new Date(year, month, d);
           const isToday = dt.toDateString() === tStr;
-          const dayTasks = all.filter(i => parseDate(i.itemType === 'task' ? i.dueDate : i.deadline)?.toDateString() === dt.toDateString());
+          const dayTasks = all.filter(i => parseDate(i.itemType === 'task' ? (i.effectiveDueDate || i.dueDate) : i.deadline)?.toDateString() === dt.toDateString());
 
           let chipsHtml = '';
           const limit = 3;
@@ -2285,19 +2391,20 @@
     function buildOverdueView() {
       const all = getAll();
       const t = today();
-      const tasks = all.filter(i => i.itemType === 'task' && !i.completed && i.dueDate && parseDate(i.dueDate) < t);
-      tasks.sort((a, b) => parseDate(a.dueDate) - parseDate(b.dueDate)); // most overdue first
+      const tasks = all.filter(i => i.itemType === 'task' && !i.completed && (i.effectiveDueDate || i.dueDate) && parseDate(i.effectiveDueDate || i.dueDate) < t);
+      tasks.sort((a, b) => parseDate(a.effectiveDueDate || a.dueDate) - parseDate(b.effectiveDueDate || b.dueDate)); // most overdue first
       const emptySvg = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3a3a3a" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
       return buildFlatList(tasks, 'Overdue', svgOvd, emptySvg, "You're all caught up", 'No tasks are past their due date');
     }
 
     // Helper to render standalone task row (flat lists)
     function renderTaskInfoRow(task, colId) {
+      const effDue = task.effectiveDueDate || task.dueDate;
       let duChip = '';
-      if (task.dueDate) {
-        duChip = `<span class="deadline-chip ${deadlineColor(task.dueDate)}">${formatDateShort(task.dueDate)}</span>`;
+      if (effDue) {
+        duChip = `<span class="deadline-chip ${deadlineColor(effDue, false, task.completed)}">${formatDateShort(effDue)}</span>`;
       }
-      const isOvd = task.dueDate && parseDate(task.dueDate) < today();
+      const isOvd = effDue && parseDate(effDue) < today() && !task.completed;
       const starActive = task.important ? ' active' : '';
 
       return `<div class="task-item" data-task-id="${task.id}">
@@ -2376,18 +2483,19 @@
       return head + body;
     }
 
-    function renderItem(item, depth, colId, filter, isHome = false) {
-      if (item.itemType === 'task') return renderTaskNode(item, depth, colId, filter, isHome);
-      return renderGroupNode(item, depth, colId, filter, isHome);
+    function renderItem(item, depth, colId, filter, isHome = false, inheritedDeadline = null) {
+      if (item.itemType === 'task') return renderTaskNode(item, depth, colId, filter, isHome, inheritedDeadline);
+      return renderGroupNode(item, depth, colId, filter, isHome, inheritedDeadline);
     }
 
-    function renderTaskNode(task, depth, colId, filter, isHome = false) {
-      if (!isTaskVisible(task, filter)) return '';
+    function renderTaskNode(task, depth, colId, filter, isHome = false, inheritedDeadline = null) {
+      if (!isTaskVisible(task, filter, inheritedDeadline)) return '';
       if (task.archived) return '';
+      const effDue = task.dueDate || inheritedDeadline;
       let duChip = '';
-      if (task.dueDate) duChip = `<span class="deadline-chip ${deadlineColor(task.dueDate)}">${formatDateShort(task.dueDate)}</span>`;
+      if (effDue) duChip = `<span class="deadline-chip ${deadlineColor(effDue, isHome, task.completed)}">${formatDateShort(effDue)}</span>`;
       const starActive = task.important ? ' active' : '';
-      const isOvd = task.dueDate && parseDate(task.dueDate) < today();
+      const isOvd = effDue && parseDate(effDue) < today() && !task.completed;
 
       const compCls = task.completed ? ' completed' : '';
       const checkCls = task.completed ? 'task-checkbox checked' : 'task-checkbox';
@@ -2454,15 +2562,16 @@
   </div>`;
     }
 
-    function renderGroupNode(group, depth, colId, filter, isHome = false) {
+    function renderGroupNode(group, depth, colId, filter, isHome = false, inheritedDeadline = null) {
       if (group.archived) return '';
 
+      const currentDeadline = group.deadline || inheritedDeadline;
       let childrenHtml = '';
-      for (const c of (group.children || [])) childrenHtml += renderItem(c, depth + 1, colId, filter, isHome);
+      for (const c of (group.children || [])) childrenHtml += renderItem(c, depth + 1, colId, filter, isHome, currentDeadline);
 
       if (filter && filter !== 'all' && childrenHtml === '') return '';
 
-      const { completed, total } = getProgress(group, filter);
+      const { completed, total } = getProgress(group, filter, inheritedDeadline);
       const pPct = total > 0 ? (completed / total) * 100 : 0;
       const pColor = total === 0 ? '#2a2a2a' : 'rgba(255,255,255,0.4)';
 
@@ -2473,7 +2582,7 @@
         else if (group.startDate) text = `Starts ${formatDateShort(group.startDate)}`;
         else text = `Due ${formatDateShort(group.deadline)}`;
 
-        let clr = group.deadline ? deadlineColor(group.deadline) : 'gray';
+        let clr = group.deadline ? deadlineColor(group.deadline, isHome) : 'gray';
         if (hasOverdueChild(group, filter)) clr = 'red';
         chip = `<span class="deadline-chip ${clr}">${text}</span>`;
       } else if (hasOverdueChild(group, filter)) {
