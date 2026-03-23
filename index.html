@@ -2399,12 +2399,11 @@
 
     // Helper to render standalone task row (flat lists)
     function renderTaskInfoRow(task, colId) {
-      const effDue = task.effectiveDueDate || task.dueDate;
       let duChip = '';
-      if (effDue) {
-        duChip = `<span class="deadline-chip ${deadlineColor(effDue, false, task.completed)}">${formatDateShort(effDue)}</span>`;
+      if (task.dueDate) {
+        duChip = `<span class="deadline-chip ${deadlineColor(task.dueDate, false, task.completed)}">${formatDateShort(task.dueDate)}</span>`;
       }
-      const isOvd = effDue && parseDate(effDue) < today() && !task.completed;
+      const isOvd = task.dueDate && parseDate(task.dueDate) < today() && !task.completed;
       const starActive = task.important ? ' active' : '';
 
       return `<div class="task-item" data-task-id="${task.id}">
@@ -2491,11 +2490,10 @@
     function renderTaskNode(task, depth, colId, filter, isHome = false, inheritedDeadline = null) {
       if (!isTaskVisible(task, filter, inheritedDeadline)) return '';
       if (task.archived) return '';
-      const effDue = task.dueDate || inheritedDeadline;
       let duChip = '';
-      if (effDue) duChip = `<span class="deadline-chip ${deadlineColor(effDue, isHome, task.completed)}">${formatDateShort(effDue)}</span>`;
+      if (task.dueDate) duChip = `<span class="deadline-chip ${deadlineColor(task.dueDate, isHome, task.completed)}">${formatDateShort(task.dueDate)}</span>`;
       const starActive = task.important ? ' active' : '';
-      const isOvd = effDue && parseDate(effDue) < today() && !task.completed;
+      const isOvd = task.dueDate && parseDate(task.dueDate) < today() && !task.completed;
 
       const compCls = task.completed ? ' completed' : '';
       const checkCls = task.completed ? 'task-checkbox checked' : 'task-checkbox';
@@ -2574,6 +2572,7 @@
       const { completed, total } = getProgress(group, filter, inheritedDeadline);
       const pPct = total > 0 ? (completed / total) * 100 : 0;
       const pColor = total === 0 ? '#2a2a2a' : 'rgba(255,255,255,0.4)';
+      const groupCompleted = total > 0 && completed === total;
 
       let chip = '';
       if (group.startDate || group.deadline) {
@@ -2582,10 +2581,10 @@
         else if (group.startDate) text = `Starts ${formatDateShort(group.startDate)}`;
         else text = `Due ${formatDateShort(group.deadline)}`;
 
-        let clr = group.deadline ? deadlineColor(group.deadline, isHome) : 'gray';
-        if (hasOverdueChild(group, filter)) clr = 'red';
+        let clr = group.deadline ? deadlineColor(group.deadline, isHome, groupCompleted) : 'gray';
+        if (hasOverdueChild(group, filter, inheritedDeadline)) clr = 'red';
         chip = `<span class="deadline-chip ${clr}">${text}</span>`;
-      } else if (hasOverdueChild(group, filter)) {
+      } else if (hasOverdueChild(group, filter, inheritedDeadline)) {
         chip = `<span class="deadline-chip red">Overdue</span>`;
       }
 
