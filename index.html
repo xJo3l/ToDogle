@@ -619,6 +619,33 @@
       border-color: #3a3a3a !important;
     }
 
+    /* ========== COLOR PICKER ========== */
+    .color-picker-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 2px 0;
+    }
+
+    .color-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      border: 2px solid transparent;
+      box-sizing: border-box;
+    }
+
+    .color-dot:hover {
+      transform: scale(1.25);
+    }
+
+    .color-dot.active {
+      border-color: #e8e8e8;
+      box-shadow: inset 0 0 0 2px #191919;
+    }
+
     /* ========== CALENDAR VIEW ========== */
     .cal-view {
       padding: 32px 80px 40px;
@@ -1175,11 +1202,15 @@
     .toggle-content {
       display: grid;
       grid-template-rows: 0fr;
-      transition: grid-template-rows 0.3s ease
+      transition: grid-template-rows 0.3s ease, visibility 0.3s ease;
+      overflow: hidden;
+      visibility: hidden;
     }
 
     .toggle-content.expanded {
       grid-template-rows: 1fr;
+      visibility: visible;
+      overflow: visible;
     }
 
     .toggle-content.expanded .toggle-inner {
@@ -1189,6 +1220,12 @@
     .toggle-inner {
       overflow: hidden;
       min-height: 0;
+      transition: opacity 0.3s ease;
+      opacity: 0;
+    }
+
+    .toggle-content.expanded .toggle-inner {
+      opacity: 1;
     }
 
     .nested-indent {
@@ -1805,6 +1842,19 @@
     const listColors = ['#4A9EFF', '#8B5CF6', '#14B8A6', '#F59E0B', '#EC4899'];
     function getListColor(index) { return listColors[index % listColors.length]; }
 
+    const taskColors = ['#EC4899','#EF4444','#F59E0B','#22C55E','#14B8A6','#3B82F6','#8B5CF6','#6B7280'];
+    function buildColorPicker(action, id, colId, currentColor) {
+      let dots = '';
+      taskColors.forEach(c => {
+        const act = (currentColor === c) ? ' active' : '';
+        dots += `<div class="color-dot${act}" data-action="${action}" data-color="${c}" data-id="${id}" data-col="${colId}" style="background:${c}"></div>`;
+      });
+      return `<div class="group-dropdown-item" style="flex-direction:column;align-items:flex-start;gap:6px;cursor:default">
+        <span style="font-size:12px;color:#888">Color label</span>
+        <div class="color-picker-row">${dots}</div>
+      </div>`;
+    }
+
     function defaultState() {
       const cols = [
         { name: 'My Tasks', icon: '📋' }
@@ -2313,18 +2363,15 @@
         // Grid
         html += `<div style="display:grid; grid-template-columns:repeat(7, 1fr); flex:1; overflow-y:auto; border-left:1px solid #2e2e2e;">`;
 
-        // leading
-        for (let i = firstDay - 1; i >= 0; i--) {
-          html += `<div style="min-height:120px; border-right:1px solid #2e2e2e; border-bottom:1px solid #2e2e2e; padding:8px; vertical-align:top; background:#161616; border-top:1px solid #2e2e2e;">
-        <span style="font-size:13px; color:#333;">${daysInPrev - i}</span>
-      </div>`;
-        }
-
-        // current month
-        for (let d = 1; d <= daysInMonth; d++) {
-          const dt = new Date(year, month, d);
-          const isToday = dt.toDateString() === tStr;
-          const dayTasks = all.filter(i => parseDate(i.itemType === 'task' ? (i.effectiveDueDate || i.dueDate) : i.deadline)?.toDateString() === dt.toDateString());
+        // Helper to build a single day cell with task chips
+        function buildDayCell(dt, isOther, isToday, all) {
+          const dayTasks = all.filter(i => {
+            if (i.completed || i.archived) return false;
+            // Only show items with a *manual* deadline (ignore inherited effectiveDueDate)
+            const due = i.itemType === 'task' ? i.dueDate : i.deadline;
+            if (!due) return false;
+            return parseDate(due)?.toDateString() === dt.toDateString();
+          });
 
           let chipsHtml = '';
           const limit = 3;
@@ -2335,32 +2382,47 @@
             }
             const i_item = dayTasks[j];
             const name = i_item.itemType === 'task' ? i_item.text : i_item.name;
-            // Determine color border
             let bColor = 'transparent';
             const colIdx = state.columns.findIndex(c => c.id === i_item.colId || c.items.some(x => x.id === i_item.id || (x.children && x.children.some(y => y.id === i_item.id))));
             if (colIdx !== -1) bColor = listColors[colIdx % listColors.length];
 
-            chipsHtml += `<div class="cal-task-chip-new" style="border-left:1px solid ${bColor}; background:#2a2a2a; border-radius:4px; padding:2px 8px; font-size:12px; color:#ccc; margin-bottom:2px; width:100%; box-sizing:border-box; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" data-action="cal-item-click" data-name="${escHtml(name)}" data-bread="${escHtml(getBreadcrumb(i_item))}" data-date="${formatDateShort(dt)}">${escHtml(name)}</div>`;
+            const chipBg = i_item.color ? i_item.color : '#2a2a2a';
+            const chipTextColor = i_item.color ? '#fff' : '#ccc';
+
+            chipsHtml += `<div class="cal-task-chip-new" style="border-left:1px solid ${bColor}; background:${chipBg}; border-radius:4px; padding:2px 8px; font-size:12px; color:${chipTextColor}; margin-bottom:2px; width:100%; box-sizing:border-box; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" data-action="cal-item-click" data-name="${escHtml(name)}" data-bread="${escHtml(getBreadcrumb(i_item))}" data-date="${formatDateShort(dt)}">${escHtml(name)}</div>`;
           }
 
+          const dayNum = dt.getDate();
+          const numColor = isToday ? 'white' : '#888';
           const numStyle = isToday
             ? `background:#4A9EFF; color:white; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:13px;`
-            : `font-size:13px; color:#888; display:block;`;
-
+            : `font-size:13px; color:${numColor}; display:block;`;
           const cellBg = isToday ? '#1f1f1f' : 'transparent';
 
-          html += `<div class="cal-cell-new" style="min-height:120px; border-right:1px solid #2e2e2e; border-bottom:1px solid #2e2e2e; padding:8px; vertical-align:top; background:${cellBg}; transition:background 0.2s; border-top:1px solid #2e2e2e;">
-        <div style="margin-bottom:4px;"><span style="${numStyle}">${d}</span></div>
+          return `<div class="cal-cell-new" style="min-height:120px; border-right:1px solid #2e2e2e; border-bottom:1px solid #2e2e2e; padding:8px; vertical-align:top; background:${cellBg}; transition:background 0.2s; border-top:1px solid #2e2e2e;">
+        <div style="margin-bottom:4px;"><span style="${numStyle}">${dayNum}</span></div>
         ${chipsHtml}
       </div>`;
         }
 
-        // trailing
+        // leading (previous month days)
+        for (let i = firstDay - 1; i >= 0; i--) {
+          const dt = new Date(year, month - 1, daysInPrev - i);
+          html += buildDayCell(dt, true, false, all);
+        }
+
+        // current month
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dt = new Date(year, month, d);
+          const isToday = dt.toDateString() === tStr;
+          html += buildDayCell(dt, false, isToday, all);
+        }
+
+        // trailing (next month days)
         const trailingCount = totalCells - firstDay - daysInMonth;
         for (let i = 1; i <= trailingCount; i++) {
-          html += `<div style="min-height:120px; border-right:1px solid #2e2e2e; border-bottom:1px solid #2e2e2e; padding:8px; vertical-align:top; background:#161616; border-top:1px solid #2e2e2e;">
-        <span style="font-size:13px; color:#333;">${i}</span>
-      </div>`;
+          const dt = new Date(year, month + 1, i);
+          html += buildDayCell(dt, true, false, all);
         }
 
         html += `</div>`;
@@ -2498,6 +2560,7 @@
       const compCls = task.completed ? ' completed' : '';
       const checkCls = task.completed ? 'task-checkbox checked' : 'task-checkbox';
       const textCls = task.completed ? 'task-text done' : 'task-text';
+      const taskAccent = task.color ? `border-left:3px solid ${task.color};padding-left:11px;` : '';
 
       if (isHome) {
         return `<div class="task-item${compCls} home-task-row" data-task-id="${task.id}" style="padding:0;height:28px;background:transparent;border:none;position:relative;">
@@ -2512,6 +2575,8 @@
     <div class="home-task-dots-wrap" style="position:relative;margin-left:4px;flex-shrink:0;">
       <div class="action-btn home-task-dots" data-action="toggle-task-menu" data-id="${task.id}" style="opacity:0;transition:opacity 0.2s;font-size:14px;width:20px;height:20px;">⋯</div>
       <div class="group-dropdown" id="taskMenu-${task.id}" style="right:0;top:100%;min-width:160px;">
+        ${buildColorPicker('set-task-color', task.id, colId, task.color)}
+        <div class="group-dropdown-divider"></div>
         <div class="group-dropdown-item${task.completed ? '' : ' disabled'}" data-action="task-sweep" data-id="${task.id}" data-col="${colId}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
           Sweep
@@ -2525,7 +2590,7 @@
   </div>`;
       }
 
-      return `<div class="task-item${compCls}" data-task-id="${task.id}" draggable="true">
+      return `<div class="task-item${compCls}" data-task-id="${task.id}" draggable="true" style="${taskAccent}">
     <div class="${checkCls}" data-action="toggle-task" data-id="${task.id}" data-col="${colId}">✓</div>
     <div class="task-info">
       <div style="display:flex;align-items:center;min-width:0;">
@@ -2537,6 +2602,8 @@
     <div class="task-actions" style="position:relative">
       <div class="action-btn" data-action="toggle-task-menu" data-id="${task.id}" title="Actions">⋮</div>
       <div class="group-dropdown" id="taskMenu-${task.id}" style="right:0;top:100%;min-width:160px;">
+        ${buildColorPicker('set-task-color', task.id, colId, task.color)}
+        <div class="group-dropdown-divider"></div>
         <div class="group-dropdown-item" data-action="rename-task" data-id="${task.id}" data-col="${colId}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
           Rename
@@ -2593,6 +2660,7 @@
         const arrow = col ? '▶' : '▼';
         const completedTasksCount = countCompletedTasks(group);
         const maxH = col ? '0' : '1000px'; // A sufficiently large value for expanded content
+        const groupAccent = group.color ? `border-left:3px solid ${group.color};padding-left:5px;` : '';
         return `
           <div class="home-group" data-group-id="${group.id}" style="position:relative">
             <div class="home-group-header" style="cursor:pointer;display:flex;align-items:center;padding:6px 0;position:relative;" data-action="toggle-home-group" data-id="${group.id}">
@@ -2604,6 +2672,8 @@
               <div style="position:relative;margin-left:4px;flex-shrink:0;">
                 <div class="action-btn home-group-dots" data-action="toggle-group-menu" data-id="${group.id}" style="opacity:0;transition:opacity 0.2s;font-size:14px;">⋯</div>
                 <div class="group-dropdown" id="groupMenu-${group.id}" style="right:0;top:100%;">
+                  ${buildColorPicker('set-group-color', group.id, colId, group.color)}
+                  <div class="group-dropdown-divider"></div>
                   <div class="group-dropdown-item" data-action="rename-group" data-id="${group.id}" data-col="${colId}">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                     Rename
@@ -2645,9 +2715,11 @@
       const completedTasksCount = countCompletedTasks(group);
       const isArchiveDisabled = completedTasksCount === 0 ? ' style="color:#444;pointer-events:none"' : '';
 
+      const groupAccentList = group.color ? `border-left:3px solid ${group.color};padding-left:11px;` : '';
+
       return `
   <div class="toggle-group" data-group-id="${group.id}" draggable="true">
-    <div class="toggle-header" data-action="toggle-collapse" data-id="${group.id}">
+    <div class="toggle-header" data-action="toggle-collapse" data-id="${group.id}" style="${groupAccentList}">
       <div class="toggle-arrow${col ? ' collapsed' : ''}" data-arrow-id="${group.id}">▼</div>
       <div style="display:flex;align-items:center;min-width:0;flex:1;">
         <div class="toggle-name" style="flex:0 1 auto;">${escHtml(group.name)}</div>
@@ -2657,7 +2729,9 @@
       <div class="task-actions" style="opacity:1;margin-left:8px;position:relative;z-index:2">
         <div style="position:relative">
           <div class="action-btn" data-action="toggle-group-menu" data-id="${group.id}">⋯</div>
-          <div class="group-dropdown" id="groupMenu-${group.id}">
+          <div class="group-dropdown" id="groupMenu-${group.id}" style="right:0;top:100%;">
+            ${buildColorPicker('set-group-color', group.id, colId, group.color)}
+            <div class="group-dropdown-divider"></div>
             <div class="group-dropdown-item" onclick="try{this.querySelector('input').showPicker()}catch(e){}">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><line x1="12" y1="14" x2="12" y2="18"></line><line x1="10" y1="16" x2="14" y2="16"></line></svg>
               Set start date
@@ -3234,6 +3308,28 @@
         const c = state.columns.find(x => x.id === btn.dataset.id);
         if (c) { c.important = !c.important; saveState(); renderSidebar(); }
       }
+      else if (a === 'set-task-color') {
+        e.stopPropagation();
+        const col = state.columns.find(c => c.id === btn.dataset.col);
+        if (col) {
+          const task = findById(col.items, btn.dataset.id);
+          if (task) {
+            task.color = (task.color === btn.dataset.color) ? null : btn.dataset.color;
+            saveState(); render();
+          }
+        }
+      }
+      else if (a === 'set-group-color') {
+        e.stopPropagation();
+        for (const col of state.columns) {
+          const grp = findById(col.items, btn.dataset.id);
+          if (grp) {
+            grp.color = (grp.color === btn.dataset.color) ? null : btn.dataset.color;
+            saveState(); render();
+            break;
+          }
+        }
+      }
       else if (a === 'cal-item-click') {
         e.stopPropagation();
         const p = document.getElementById('calPopup');
@@ -3295,7 +3391,7 @@
           if (v) {
             const col = state.columns.find(c => c.id === e.target.dataset.col);
             if (col) {
-              const nTask = { id: generateId(), itemType: 'task', text: v, completed: false, important: false, dueDate: null };
+              const nTask = { id: generateId(), itemType: 'task', text: v, completed: false, important: false, dueDate: null, color: null };
               if (e.target.dataset.container === col.id) col.items.push(nTask);
               else {
                 const grp = findById(col.items, e.target.dataset.container);
@@ -3507,7 +3603,7 @@
       const name = document.getElementById('modalName').value.trim();
       if (!name || !modalTarget) return;
       const type = document.querySelector('input[name="modalType"]:checked')?.value || 'persistent';
-      const nGrp = { id: generateId(), itemType: 'group', name, type, startDate: document.getElementById('modalStartDate').value || null, deadline: document.getElementById('modalDeadline').value || null, collapsed: false, children: [] };
+      const nGrp = { id: generateId(), itemType: 'group', name, type, startDate: document.getElementById('modalStartDate').value || null, deadline: document.getElementById('modalDeadline').value || null, collapsed: false, color: null, children: [] };
       const col = state.columns.find(c => c.id === modalTarget.columnId);
       if (col) {
         if (modalTarget.parentId === modalTarget.columnId) col.items.push(nGrp);
