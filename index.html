@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ToDogle</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     /* ========== RESET & BASE ========== */
     *,
@@ -1540,16 +1541,20 @@
       font-size: 12px
     }
 
-    .sidebar-emoji {
-      font-size: 14px;
-      filter: grayscale(100%) brightness(0.7);
-      cursor: pointer;
+    .sidebar-lucide-icon {
+      width: 16px;
+      height: 16px;
       flex-shrink: 0;
-      transition: filter 0.2s;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a0a0a0;
+      transition: color 0.15s;
     }
-
-    .sb-list-item:hover .sidebar-emoji {
-      filter: grayscale(100%) brightness(0.9)
+    .sb-list-item.active .sidebar-lucide-icon,
+    .sb-list-item:hover .sidebar-lucide-icon {
+      color: #ffffff;
     }
 
     .header-dropdown, .sb-dropdown, .group-dropdown {
@@ -2054,28 +2059,38 @@
 
     let emojiPickerTargetCol = null;
 
-    function filterEmojiPicker(query) {
-      const grid = document.getElementById('epGrid');
-      grid.innerHTML = '';
-      const q = query.toLowerCase();
+    const lucideIconList = [
+      'folder','book-open','briefcase','star','bookmark','tag','flag','zap','clipboard','layers',
+      'pencil','lightbulb','globe','code','music','bell','graduation-cap','list','cpu','heart',
+      'camera','coffee','compass','dumbbell','film','flask-conical','gamepad-2','gift','hammer',
+      'headphones','home','inbox','key','leaf','map','microscope','moon','palette','plane','rocket',
+      'shield','shopping-cart','sun','target','terminal','tree-pine','trophy','umbrella','user','wallet'
+    ];
 
-      let matchCount = 0;
-      emojiCategories.forEach(cat => {
-        cat.emojis.forEach(em => {
-          // Basic search logic: match any char just passing thru, or simple hardcode dictionary map. 
-          // Since emojis lack text descriptors inherently here, we'll just check if query is empty or matches category name broadly.
-          // E.g 'work' shows Study/Work emojis.
-          if (!q || cat.name.toLowerCase().includes(q)) {
-            matchCount++;
-            grid.innerHTML += `<div class="ep-emoji" data-action="ep-select" data-emoji="${em}">${em}</div>`;
-          }
-        });
-      });
-
-      if (matchCount === 0) {
-        grid.innerHTML = `<div class="ep-empty">No emoji found</div>`;
+    function renderLucideIcons() {
+      if (window.lucide && window.lucide.createIcons) {
+        window.lucide.createIcons();
       }
     }
+
+    function filterIconPicker(query) {
+      const grid = document.getElementById('lpGrid');
+      if (!grid) return;
+      const q = query.toLowerCase();
+      const filtered = q ? lucideIconList.filter(n => n.includes(q)) : lucideIconList;
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="ep-empty">No icon found</div>`;
+        return;
+      }
+      grid.innerHTML = filtered.map(name =>
+        `<div class="ep-emoji" data-action="lp-select" data-icon="${name}" title="${name}" style="display:flex;align-items:center;justify-content:center;color:#a0a0a0;width:32px;height:32px">
+          <i data-lucide="${name}" style="width:18px;height:18px;stroke:#a0a0a0;stroke-width:1.5"></i>
+        </div>`
+      ).join('');
+      renderLucideIcons();
+    }
+
+    function filterEmojiPicker(query) { filterIconPicker(query); }
 
     /* ================================================================
        RENDERING - SIDEBAR
@@ -2128,9 +2143,14 @@
         countOpen(col.items);
 
         const starIcon = col.important ? '<span style="color:#fbbf24;font-size:12px;margin-left:6px">★</span>' : '';
-        listsHtml += `<div class="sb-list-item${currentView === col.id ? ' active' : ''}" data-action="nav" data-view="${col.id}" draggable="true" data-index="${i}">
+        const isActiveCol = currentView === col.id;
+        const iconName = (col.icon && lucideIconList.includes(col.icon)) ? col.icon : 'folder';
+        const iconColor = isActiveCol ? '#ffffff' : '#a0a0a0';
+        listsHtml += `<div class="sb-list-item${isActiveCol ? ' active' : ''}" data-action="nav" data-view="${col.id}" draggable="true" data-index="${i}">
       
-      <div class="sidebar-emoji" data-action="ep-open" data-col="${col.id}" title="Change icon">${col.icon || '📋'}</div>
+      <div class="sidebar-lucide-icon" data-action="lp-open" data-col="${col.id}" title="Change icon">
+        <i data-lucide="${iconName}" style="width:16px;height:16px;stroke:${iconColor};stroke-width:1.5;fill:none;"></i>
+      </div>
       <div style="flex:1;display:flex;align-items:center;min-width:0;">
         <span class="sb-list-name-txt">${escHtml(col.name)}</span>
         ${starIcon}
@@ -2168,6 +2188,8 @@
 
       sb.innerHTML = topNav + listsHtml + botNav;
       if (addingColNew) setTimeout(() => document.getElementById('newColInput')?.focus(), 50);
+      // Render Lucide icons after sidebar HTML is set
+      renderLucideIcons(sb);
     }
 
     /* ================================================================
@@ -3102,34 +3124,34 @@
           } else alert('Original list deleted!');
         }
       }
-      else if (a === 'ep-open') {
+      else if (a === 'lp-open') {
         e.stopPropagation();
         emojiPickerTargetCol = btn.dataset.col;
-        const ep = document.getElementById('emojiPicker');
-        if (!ep) {
+        let lp = document.getElementById('emojiPicker');
+        if (!lp) {
           document.body.insertAdjacentHTML('beforeend', `
         <div id="emojiPicker">
-          <input type="text" id="epSearch" class="ep-search" placeholder="Search emoji..." autocomplete="off">
-          <div id="epGrid" class="ep-grid"></div>
+          <input type="text" id="epSearch" class="ep-search" placeholder="Search icon..." autocomplete="off">
+          <div id="lpGrid" class="ep-grid"></div>
         </div>
       `);
-          document.getElementById('epSearch').addEventListener('input', ev => filterEmojiPicker(ev.target.value));
+          document.getElementById('epSearch').addEventListener('input', ev => filterIconPicker(ev.target.value));
         }
-        const realEp = document.getElementById('emojiPicker');
+        lp = document.getElementById('emojiPicker');
         const rect = btn.getBoundingClientRect();
-        realEp.style.left = (rect.left) + 'px';
-        realEp.style.top = (rect.bottom + 8) + 'px';
-        realEp.classList.add('show');
+        lp.style.left = (rect.left) + 'px';
+        lp.style.top = (rect.bottom + 8) + 'px';
+        lp.classList.add('show');
         document.getElementById('epSearch').value = '';
-        filterEmojiPicker('');
+        filterIconPicker('');
         setTimeout(() => document.getElementById('epSearch').focus(), 50);
       }
-      else if (a === 'ep-select') {
+      else if (a === 'lp-select') {
         e.stopPropagation();
         if (emojiPickerTargetCol) {
           const c = state.columns.find(x => x.id === emojiPickerTargetCol);
           if (c) {
-            c.icon = btn.dataset.emoji;
+            c.icon = btn.dataset.icon;
             saveState();
             renderSidebar();
           }
