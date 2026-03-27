@@ -1841,6 +1841,7 @@
     let modalTarget = null;
     let showMiniCal = false;
     let calendarDate = new Date();
+    let lastCalScroll = 0;
 
     function generateId() { return '_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
 
@@ -2897,6 +2898,27 @@
        ================================================================ */
 
     document.getElementById('calPopupClose').addEventListener('click', () => { document.getElementById('calPopup').classList.remove('show'); });
+
+    document.addEventListener('wheel', e => {
+      if (currentView !== 'calendar') return;
+      const calView = e.target.closest('.cal-view');
+      if (!calView) return;
+
+      const now = Date.now();
+      if (now - lastCalScroll < 500) return; // 500ms cooldown
+
+      if (Math.abs(e.deltaY) < 20) return; // Ignore small scrolls
+
+      if (e.deltaY > 0) {
+        calendarDate.setMonth(calendarDate.getMonth() + 1);
+        lastCalScroll = now;
+        renderMainContent();
+      } else if (e.deltaY < 0) {
+        calendarDate.setMonth(calendarDate.getMonth() - 1);
+        lastCalScroll = now;
+        renderMainContent();
+      }
+    }, { passive: true });
 
     document.addEventListener('click', e => {
 
