@@ -1,4 +1,4 @@
-﻿    /* ========== RESET & BASE ========== */
+    /* ========== RESET & BASE ========== */
     *,
     *::before,
     *::after {
@@ -1630,101 +1630,273 @@
       text-align: center;
       padding: 12px 0
     }
+    .bottom-nav {
+      display: none;
+    }
+
+    .fab {
+      display: none;
+    }
+
     @media (max-width: 768px) {
-      /* Padding and spacing: 80px to 16px, vertical -30% */
-      .view-header {
-        padding: 22px 16px 0 16px !important;
-      }
-      .list-content, .flat-list {
-        padding: 11px 16px 28px !important;
-      }
-      /* Content div inside home view */
-      .home-view > div {
-        padding: 17px 16px !important;
-      }
-      /* View header + div for home progress bar container */
-      #mainContent > .view-header + div {
-        padding: 0 16px !important;
+      .sidebar {
+        display: flex !important;
+        position: fixed !important;
+        left: -280px !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: 280px !important;
+        z-index: 1100 !important;
+        transition: left 0.3s ease !important;
+        background: #111 !important;
+        box-shadow: 4px 0 16px rgba(0,0,0,0.5) !important;
       }
 
-      /* Home view: Header row stacks vertically */
-      #mainContent > .view-header {
-        flex-direction: column !important;
-        align-items: flex-start !important;
+      .sidebar.mobile-open {
+        left: 0 !important;
+      }
+
+      .floating-toggle {
+        display: none !important;
+      }
+
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(2px);
+        z-index: 1050;
+      }
+
+      .sidebar-overlay.show {
+        display: block;
+      }
+
+      .app-layout {
+        flex-direction: column;
+      }
+
+      .main-content {
+        height: calc(100vh - 65px);
+        padding-bottom: 80px;
+      }
+
+      /* Header */
+      .view-header {
+        padding: 16px 20px 0 !important;
+      }
+
+      .mobile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .mobile-menu-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: #2a2a2a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #e8e8e8;
+        border: none;
+        cursor: pointer;
+      }
+
+      .mobile-app-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #e8e8e8;
+      }
+
+      .mobile-sweep-btn {
+        background: #2a2a2a;
+        color: #a78bfa;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 500;
+        border: none;
+      }
+
+      .mobile-greeting {
+        margin-bottom: 24px;
+      }
+
+      .mobile-greeting-text {
+        font-size: 24px;
+        color: #9b9b9b;
+      }
+
+      .mobile-greeting-text span {
+        color: #e8e8e8;
+        font-weight: 600;
+      }
+
+      .mobile-progress-stat {
+        float: right;
+        font-size: 20px;
+        font-weight: 600;
+        color: #9b9b9b;
+      }
+
+      .mobile-progress-stat span {
+        color: #e8e8e8;
+      }
+
+      /* Filter Pills - Segmented Control Style */
+      .hpill-container {
+        display: flex;
+        background: #1a1a1a;
+        border-radius: 8px;
+        padding: 4px;
+        margin-bottom: 24px;
+      }
+
+      .hpill {
+        flex: 1;
+        padding: 8px 0 !important;
+        text-align: center;
+        font-size: 13px !important;
+        color: #888 !important;
+        border-radius: 6px !important;
+        min-height: auto !important;
+        border: none !important;
+        background: transparent !important;
+      }
+
+      .hpill.active {
+        background: #333 !important;
+        color: #e8e8e8 !important;
+      }
+
+      /* Home Cards */
+      .home-view {
+        padding: 0 16px 100px !important;
         gap: 16px !important;
       }
-      /* Filter pills wrap onto one row, padding 2px 8px */
-      .hpill {
-        padding: 2px 8px !important;
-      }
-      .view-header > div:first-child > div:last-child {
-        flex-wrap: wrap !important;
+
+      .home-view > div {
+        padding: 0 !important;
       }
 
-      /* Sweep All button below that, each full width */
-      button[data-action="sweep-all"] {
-        flex: 1 1 100% !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        justify-content: center !important;
+      .home-view > div > div, .mobile-list-card {
+        background: #111;
+        border-radius: 12px;
+        padding: 16px !important;
+        margin-bottom: 12px;
+        border: 1px solid #1a1a1a;
+      }
+
+      .mobile-list-card {
+        margin-top: 10px;
+      }
+
+      .home-group {
+        background: #1a1a1a;
+        border-radius: 8px;
+        padding: 4px 8px;
+        margin-bottom: 4px;
+        border: 1px solid #2a2a2a;
+      }
+
+      .home-col-header {
+        border-bottom: none !important;
+        margin-bottom: 8px !important;
+        padding-bottom: 0 !important;
+      }
+
+      .home-col-header span {
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        color: #e8e8e8 !important;
         margin-left: 0 !important;
-        box-sizing: border-box !important;
       }
 
-      /* Columns container: single column full width, no horizontal scroll */
-      .home-view > div > div {
-        flex: 1 1 100% !important;
-        max-width: 100% !important;
-        min-width: 100% !important;
+      .home-group-header .home-group-name {
+        font-size: 15px !important;
+        color: #e8e8e8 !important;
       }
 
-      /* Typography */
-      .view-title, .home-col-header span { 
-        font-size: 18px !important; 
-        margin-left: 44px !important; /* Ensure titles avoid the floating toggle on mobile */
+      .home-task-row {
+        height: auto !important;
+        padding: 8px 0 !important;
       }
-      .cal-view > div:first-child > div:first-child {
-        margin-left: 44px !important;
-      }
-      .toggle-name, .home-group-name { font-size: 13px !important; }
-      .task-text, .task-name-txt, .home-task-name { font-size: 13px !important; }
-      .sb-nav-item, .sb-list-item { font-size: 12px !important; }
-      .sb-list-name-txt { font-size: 12px !important; }
-      .deadline-chip { font-size: 10px !important; }
-      .type-badge { font-size: 9px !important; }
-      .top-add-btn, .add-btn, .modal-create, .modal-cancel, .inline-cancel { font-size: 12px !important; }
 
-      /* Components: All tap targets minimum 44px height */
-      .action-btn, button, .sb-nav-item, .sb-list-item, .toggle-header, .task-item, .hpill {
-        min-height: 44px !important;
+      .home-task-name {
+        font-size: 15px !important;
+        color: #e8e8e8 !important;
       }
+
       .task-checkbox {
-        min-height: 32px !important;
-        min-width: 32px !important;
-        width: 32px !important;
-        height: 32px !important;
+        width: 22px !important;
+        height: 22px !important;
+        border-radius: 4px !important;
+        border-color: #444 !important;
       }
 
-      /* Input boxes full width */
-      .inline-input, input[type="text"], input[type="date"] {
-        width: 100% !important;
-        box-sizing: border-box !important;
+      /* FAB */
+      .fab {
+        display: flex;
+        position: fixed;
+        bottom: 90px;
+        right: 24px;
+        width: 64px;
+        height: 64px;
+        border-radius: 32px;
+        background: linear-gradient(135deg, #818cf8, #c084fc);
+        color: white;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        z-index: 1001;
+        border: none;
       }
 
-      /* Modal width 90vw */
-      .modal { width: 90vw !important; }
-
-      /* Toggle headers padding 8px 10px */
-      .toggle-header { padding: 8px 10px !important; }
-
-      /* Task items padding 6px 10px */
-      .task-item { padding: 6px 10px !important; }
-
-      /* Calendar grid cells min-height 60px, chip font size 11px */
-      .cal-view > div:last-child > div, .cal-cell-new {
-        min-height: 60px !important;
+      /* Bottom Nav */
+      .bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 75px;
+        background: #1a1a1a;
+        border-top: 1px solid #2a2a2a;
+        z-index: 1000;
+        padding: 0 20px 15px;
+        justify-content: space-between;
+        align-items: center;
       }
-      .cal-task-chip-new {
-        font-size: 11px !important;
+
+      .bn-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        color: #555;
+        text-decoration: none;
+        flex: 1;
+        padding: 8px 0;
+      }
+
+      .bn-item.active {
+        color: #8b5cf6;
+      }
+
+      .bn-item i, .bn-item svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .bn-label {
+        font-size: 11px;
+        font-weight: 500;
       }
     }
+
+

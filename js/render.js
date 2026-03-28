@@ -1,4 +1,4 @@
-﻿    /* ================================================================
+    /* ================================================================
        RENDERING - SIDEBAR
        ================================================================ */
     function renderSidebar() {
@@ -101,6 +101,28 @@
     /* ================================================================
        RENDERING - MAIN CONTENT
        ================================================================ */
+    function getMobileHeaderHtml(title, options = {}) {
+      if (window.innerWidth > 768) return '';
+      const { actionType = null, colId = null } = options;
+      
+      let actionBtn = '';
+      if (actionType === 'sweep-all') {
+        actionBtn = `<button class="mobile-sweep-btn" data-action="sweep-all">Sweep All</button>`;
+      } else if (actionType === 'list-sweep' && colId) {
+        actionBtn = `<button class="mobile-sweep-btn" data-action="list-sweep" data-id="${colId}">Sweep</button>`;
+      }
+
+      return `
+        <div class="mobile-header">
+          <button class="mobile-menu-btn" data-action="toggle-mobile-sidebar">
+            <span style="font-size: 24px; line-height: 1;">☰</span>
+          </button>
+          <div class="mobile-app-title">${escHtml(title)}</div>
+          <div style="width: 80px; display: flex; justify-content: flex-end;">${actionBtn}</div>
+        </div>
+      `;
+    }
+
     let lastRenderedView = null;
     function renderMainContent() {
       const mc = document.getElementById('mainContent');
@@ -139,12 +161,71 @@
         { id: '10days', label: 'In 10 Days' },
         { id: 'all', label: 'All' }
       ];
-      let pillsHtml = '<div style="display:flex;gap:4px;">';
+      const isMobile = window.innerWidth <= 768;
+      
+      let pillsHtml = `<div class="${isMobile ? 'hpill-container' : ''}" style="${isMobile ? '' : 'display:flex;gap:4px;'}">`;
       pills.forEach(p => {
         const act = (homeFilter === p.id) ? 'active ' : '';
-        pillsHtml += `<button class="hpill ${act}" data-action="set-home-filter" data-filter="${p.id}" style="padding:3px 10px;border-radius:999px;font-size:12px;cursor:pointer;background:transparent;border:0.5px solid transparent;color:#555;">${p.label}</button>`;
+        const style = isMobile ? '' : 'padding:3px 10px;border-radius:999px;font-size:12px;cursor:pointer;background:transparent;border:0.5px solid transparent;color:#555;';
+        pillsHtml += `<button class="hpill ${act}" data-action="set-home-filter" data-filter="${p.id}" style="${style}">${p.label}</button>`;
       });
       pillsHtml += '</div>';
+
+      if (isMobile) {
+        let contentHtml = '<div style="display:flex;flex-wrap:wrap;gap:16px;">';
+        state.columns.forEach((col) => {
+          let colContent = '';
+          for (const item of col.items) {
+            colContent += renderItem(item, 0, col.id, homeFilter, true);
+          }
+          if (colContent !== '') {
+            const completedInCol = countCompletedTasks(col);
+            contentHtml += `
+            <div style="flex: 1 1 100%; border-radius:12px; background:#1a1a1a; padding:16px; margin-bottom:12px; border:1px solid #2a2a2a;">
+              <div class="home-col-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-size:16px; font-weight:600; color:#e8e8e8;">${escHtml(col.name)}</span>
+                <div style="position:relative">
+                  <div class="action-btn list-sweep-btn" data-action="toggle-list-sweep-menu" data-id="${col.id}" style="font-size:16px; opacity:1; cursor:pointer; color:#8b5cf6;">⋯</div>
+                  <div class="group-dropdown" id="listSweepMenu-${col.id}" style="right:0; top:100%;">
+                    <div class="group-dropdown-item${completedInCol === 0 ? ' disabled' : ''}" data-action="list-sweep" data-id="${col.id}">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
+                      Sweep
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">${colContent}</div>
+            </div>`;
+          }
+        });
+        
+        if (contentHtml === '<div style="display:flex;flex-wrap:wrap;gap:16px;">') {
+          contentHtml = `
+            <div class="empty-state" style="padding:40px 16px;">
+              <div style="color:#666;font-size:14px;font-weight:500">No tasks due in this period</div>
+            </div>
+          `;
+        } else {
+          contentHtml += '</div>';
+        }
+
+        const pPct = overallPct * 100;
+        const mobileHeader = getMobileHeaderHtml('ToDogle', { actionType: 'sweep-all' });
+
+        return `
+          <div class="view-header">
+            ${mobileHeader}
+            <div class="mobile-greeting">
+              <div class="mobile-progress-stat"><span>${completedTasks}</span>/${totalTasks}</div>
+              <div class="mobile-greeting-text">Good morning, <span>Guest User</span></div>
+            </div>
+            ${pillsHtml}
+          </div>
+          <div class="home-view" style="padding-top:0">
+            ${contentHtml}
+          </div>
+        `;
+      }
 
       let contentHtml = '<div style="display:flex;flex-wrap:wrap;gap:24px;padding:24px 80px;">';
       
@@ -228,7 +309,10 @@
     }
 
     function buildFlatList(tasks, title, iconStr = '', emptySvg = '', emptyTitle = '', emptySub = '') {
-      let html = `<div class="view-header"><div class="view-title">${iconStr} ${title}</div></div><div class="flat-list">`;
+      const isMobile = window.innerWidth <= 768;
+      const mobileHeader = getMobileHeaderHtml(title);
+      const desktopHeader = isMobile ? '' : `<div class="view-title">${iconStr} ${title}</div>`;
+      let html = `<div class="view-header">${mobileHeader}${desktopHeader}</div><div class="flat-list">`;
       if (tasks.length === 0) {
         html += `<div class="empty-state" style="padding:100px 20px;">
       ${emptySvg}
@@ -259,7 +343,9 @@
         totalCells += (7 - rem);
       }
 
-      let html = `<div class="cal-view">`;
+      const isMobile = window.innerWidth <= 768;
+      const mobileHeader = getMobileHeaderHtml('Calendar');
+      let html = `<div class="view-header">${mobileHeader}</div><div class="cal-view">`;
 
       // Header
       html += `
@@ -419,10 +505,11 @@
        ================================================================ */
     function buildListView(col) {
       const idx = state.columns.findIndex(c => c.id === col.id);
+      const isMobile = window.innerWidth <= 768;
       const color = 'transparent';
+      const mobileHeader = getMobileHeaderHtml(col.name, { actionType: 'list-sweep', colId: col.id });
 
-      let head = `
-    <div class="view-header">
+      let headStr = isMobile ? '' : `
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div class="view-title"><div style="width:16px;height:16px;border-radius:4px;background:${color};flex-shrink:0;"></div> <span class="list-name-txt" data-action="rename-col" data-col="${col.id}" style="cursor:text;display:block;">${escHtml(col.name)}</span></div>
         <div style="display:flex;gap:8px;position:relative;align-items:center;flex-shrink:0;">
@@ -438,25 +525,46 @@
       </div>
       </div>
       <div class="list-color-line" style="background:${color}"></div>
+      `;
+
+      let head = `
+    <div class="view-header">
+      ${mobileHeader}
+      ${headStr}
     </div>
   `;
 
       let body = `<div class="list-content">`;
-      if (col.items.length === 0) {
-        if (addingTaskIn !== col.id) {
-          body += `<div class="empty-state" style="padding:100px 20px;">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <path d="M9 12l2 2 4-4"></path>
-          <line x1="16" y1="8" x2="16" y2="8"></line>
-          <line x1="8" y1="8" x2="8" y2="8"></line>
-        </svg>
-        <div style="color:#9b9b9b;font-size:14px;font-weight:500;margin-top:12px">This list is empty</div>
-        <div style="color:#666;font-size:12px;margin-top:4px">Click + Add to create a group or task</div>
-      </div>`;
+      
+      if (isMobile) {
+        let contentHtml = '';
+        for (const item of col.items) contentHtml += renderItem(item, 0, col.id, null, true);
+        
+        if (contentHtml === '') {
+           body += `<div class="empty-state" style="padding:40px 16px;"><div style="color:#666;font-size:14px;font-weight:500">This list is empty</div></div>`;
+        } else {
+           body += `
+            <div class="mobile-list-card">
+              <div style="display:flex;flex-direction:column;gap:8px;">${contentHtml}</div>
+            </div>`;
         }
       } else {
-        for (const item of col.items) body += renderItem(item, 0, col.id);
+        if (col.items.length === 0) {
+          if (addingTaskIn !== col.id) {
+            body += `<div class="empty-state" style="padding:100px 20px;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <path d="M9 12l2 2 4-4"></path>
+            <line x1="16" y1="8" x2="16" y2="8"></line>
+            <line x1="8" y1="8" x2="8" y2="8"></line>
+          </svg>
+          <div style="color:#9b9b9b;font-size:14px;font-weight:500;margin-top:12px">This list is empty</div>
+          <div style="color:#666;font-size:12px;margin-top:4px">Click + Add to create a group or task</div>
+        </div>`;
+          }
+        } else {
+          for (const item of col.items) body += renderItem(item, 0, col.id);
+        }
       }
 
       // Bottom adds
@@ -473,8 +581,10 @@
     }
 
     function renderItem(item, depth, colId, filter, isHome = false, inheritedDeadline = null) {
-      if (item.itemType === 'task') return renderTaskNode(item, depth, colId, filter, isHome, inheritedDeadline);
-      return renderGroupNode(item, depth, colId, filter, isHome, inheritedDeadline);
+      const isMobile = window.innerWidth <= 768;
+      const useHomeStyle = isHome || isMobile;
+      if (item.itemType === 'task') return renderTaskNode(item, depth, colId, filter, useHomeStyle, inheritedDeadline);
+      return renderGroupNode(item, depth, colId, filter, useHomeStyle, inheritedDeadline);
     }
 
     function renderTaskNode(task, depth, colId, filter, isHome = false, inheritedDeadline = null) {
@@ -764,15 +874,21 @@
       if (!hasAny) mainHtml += `<div class="empty-state"><div class="empty-title" style="color:#9b9b9b">No completed tasks yet</div></div>`;
       mainHtml += `</div>`;
 
-      let head = `<div class="view-header"><div style="display:flex;align-items:center;justify-content:space-between"><div class="view-title">✓ Completed</div></div></div>`;
+      const isMobile = window.innerWidth <= 768;
+      const mobileHeader = getMobileHeaderHtml('Completed');
+      const desktopHeader = isMobile ? '' : `<div style="display:flex;align-items:center;justify-content:space-between"><div class="view-title">✓ Completed</div></div>`;
+      let head = `<div class="view-header">${mobileHeader}${desktopHeader}</div>`;
 
       return head + mainHtml;
     }
 
     function buildTrashView() {
-      let html = `<div class="view-header"><div style="display:flex;align-items:center;justify-content:space-between"><div class="view-title">🗑 Trash</div>
+      const isMobile = window.innerWidth <= 768;
+      const mobileHeader = getMobileHeaderHtml('Trash');
+      const desktopHeader = isMobile ? '' : `<div style="display:flex;align-items:center;justify-content:space-between"><div class="view-title">🗑 Trash</div>
     ${state.trash.length > 0 ? `<button class="add-btn" data-action="empty-trash" style="color:#ef4444;border-color:#ef4444;margin:0;width:auto">Empty Trash</button>` : ''}
-  </div></div><div class="flat-list" style="display:flex;flex-direction:column;gap:8px">`;
+  </div>`;
+      let html = `<div class="view-header">${mobileHeader}${desktopHeader}</div><div class="flat-list" style="display:flex;flex-direction:column;gap:8px">`;
       if (state.trash.length === 0) {
         html += `<div class="empty-state"><div class="empty-title" style="color:#9b9b9b">Trash is empty</div></div>`;
       } else {
@@ -791,9 +907,42 @@
       return html;
     }
 
+    function renderBottomNav() {
+      const bn = document.getElementById('bottomNav');
+      if (!bn) return;
+      if (window.innerWidth > 768) {
+        bn.style.display = 'none';
+        return;
+      }
+      bn.style.display = 'flex';
+
+      const navItems = [
+        { id: 'home', label: 'Home', icon: 'home' },
+        { id: 'calendar', label: 'Calendar', icon: 'calendar' },
+        { id: 'important', label: 'Important', icon: 'star' },
+        { id: 'overdue', label: 'Overdue', icon: 'clock' }
+      ];
+
+      bn.innerHTML = navItems.map(item => `
+        <a href="#" class="bn-item${currentView === item.id ? ' active' : ''}" data-action="nav" data-view="${item.id}">
+          <i data-lucide="${item.icon}"></i>
+          <span class="bn-label">${item.label}</span>
+        </a>
+      `).join('');
+
+      renderLucideIcons(bn);
+    }
+
     function render() {
       const sb = document.querySelector('.sidebar');
       if (state.sbCollapsed) sb.classList.add('collapsed'); else sb.classList.remove('collapsed');
       renderSidebar();
+      renderBottomNav();
       renderMainContent();
+      
+      // Toggle FAB visibility
+      const fab = document.getElementById('fab');
+      if (fab) {
+        fab.style.display = (window.innerWidth <= 768 && currentView === 'home') ? 'flex' : 'none';
+      }
     }

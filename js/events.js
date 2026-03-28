@@ -1,4 +1,4 @@
-﻿    /* ================================================================
+    /* ================================================================
        EVENTS
        ================================================================ */
 
@@ -25,6 +25,15 @@
       }
     }, { passive: true });
 
+    let lastIsMobile = window.innerWidth <= 768;
+    window.addEventListener('resize', () => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile !== lastIsMobile) {
+        lastIsMobile = isMobile;
+        render();
+      }
+    });
+
     document.addEventListener('click', e => {
 
       const btn = e.target.closest('[data-action]');
@@ -39,7 +48,14 @@
 
       if (a === 'nav') {
         currentView = btn.dataset.view;
+        // Close mobile sidebar if open
+        document.getElementById('sidebar')?.classList.remove('mobile-open');
+        document.getElementById('sidebarOverlay')?.classList.remove('show');
         render();
+      }
+      else if (a === 'toggle-mobile-sidebar') {
+        document.getElementById('sidebar')?.classList.toggle('mobile-open');
+        document.getElementById('sidebarOverlay')?.classList.toggle('show');
       }
       else if (a === 'set-home-filter') {
         homeFilter = btn.dataset.filter; render();
@@ -189,9 +205,17 @@
           }
         }
       }
-      else if (a === 'show-add-task') {
-        addingTaskIn = btn.dataset.target; render();
-        setTimeout(() => document.querySelector(`[data-task-input="${btn.dataset.target}"]`)?.focus(), 150);
+      else if (a === 'show-add-task-modal' || a === 'show-add-task') {
+        const targetId = btn.dataset.target || (state.columns.find(c => c.name.toLowerCase().includes('task'))?.id || state.columns[0]?.id);
+        if (targetId) {
+          addingTaskIn = targetId;
+          const col = state.columns.find(c => c.id === targetId);
+          if (col && currentView !== targetId && !btn.dataset.target) {
+            currentView = targetId;
+          }
+          render();
+          setTimeout(() => document.querySelector(`[data-task-input="${targetId}"]`)?.focus(), 150);
+        }
       }
       else if (a === 'clear-list-completed') {
         const colId = btn.dataset.col;
@@ -790,6 +814,10 @@
       if (document.getElementById('emojiPicker')?.classList.contains('show') && !e.target.closest('#emojiPicker') && !e.target.closest('[data-action="ep-open"]')) {
         document.getElementById('emojiPicker').classList.remove('show');
       }
+      if (e.target.closest('#sidebarOverlay')) {
+        document.getElementById('sidebar')?.classList.remove('mobile-open');
+        document.getElementById('sidebarOverlay')?.classList.remove('show');
+      }
     });
 
 
@@ -810,4 +838,6 @@
         setTimeout(() => { t.remove(); }, 300);
       }, 2500);
     }
+
+    render();
 
