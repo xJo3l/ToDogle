@@ -14,6 +14,8 @@
     let showMiniCal = false;
     let calendarDate = new Date();
     let lastCalScroll = 0;
+    let qtSelectedId = null;
+    let qtExpandedIds = new Set();
 
     function generateId() { return '_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
 
@@ -120,9 +122,8 @@
       setTimeout(() => { inp.focus(); inp.select(); }, 50);
     }
 
-    function isTaskVisible(task, filter, inheritedDeadline = null) {
+    function isTaskInCategory(task, filter, inheritedDeadline = null) {
       if (!filter || filter === 'all') return true;
-      if (task.completed) return false;
       const effDue = task.dueDate || inheritedDeadline;
       if (!effDue) return false;
       const t = today();
@@ -133,6 +134,11 @@
       if (filter === '5days' && diff >= 0 && diff <= 4) return true;
       if (filter === '10days' && diff >= 0 && diff <= 9) return true;
       return false;
+    }
+
+    function isTaskVisible(task, filter, inheritedDeadline = null) {
+      if (task.completed && (filter && filter !== 'all')) return false;
+      return isTaskInCategory(task, filter, inheritedDeadline);
     }
 
     function countCompletedTasks(g) {
@@ -150,7 +156,7 @@
       const currentDeadline = group.deadline || inheritedDeadline;
       for (const c of group.children) {
         if (c.itemType === 'task') {
-          if (isTaskVisible(c, filter, currentDeadline) && !c.archived) {
+          if (isTaskInCategory(c, filter, currentDeadline) && !c.archived) {
             total++;
             if (c.completed) completed++;
           }
@@ -203,8 +209,8 @@
     function getAllTasksNested(items, path, colName, colId, result, inheritedDeadline = null) {
       for (const item of items) {
         if (item.itemType === 'task') {
-          result.push({ ...item, path: [...path], colName, colId, effectiveDueDate: item.dueDate || inheritedDeadline });
-        } else if (item.itemType === 'group') {
+          if (!item.archived) result.push({ ...item, path: [...path], colName, colId, effectiveDueDate: item.dueDate || inheritedDeadline });
+        } else if (item.itemType === 'group' && !item.archived) {
           if (item.deadline) {
             result.push({ ...item, path: [...path], colName, colId }); // group itself as deadline item
           }

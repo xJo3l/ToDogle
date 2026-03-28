@@ -157,8 +157,9 @@
 
     function buildHomeView() {
       const all = getAll();
-      const totalTasks = all.filter(i => i.itemType === 'task' && !i.archived).length;
-      const completedTasks = all.filter(i => i.itemType === 'task' && i.completed && !i.archived).length;
+      const homeTasks = all.filter(i => i.itemType === 'task' && isTaskInCategory(i, homeFilter, i.effectiveDueDate));
+      const totalTasks = homeTasks.length;
+      const completedTasks = homeTasks.filter(i => i.completed).length;
       const overallPct = totalTasks > 0 ? (completedTasks / totalTasks) : 0;
       const dashOffset = 163.36 * (1 - overallPct);
 
@@ -400,7 +401,7 @@
             : `color:${isOther ? '#2a2a2a' : '#888'};`;
 
           return `
-            <div class="cal-cell-mobile" style="border-right:1px solid #222; border-bottom:1px solid #222; padding:2px; display:flex; flex-direction:column; align-items:center; background:${isToday ? '#1a1a1a' : 'transparent'};">
+            <div class="cal-cell-mobile" style="border-right:1px solid #222; border-bottom:1px solid #222; padding:2px; display:flex; flex-direction:column; align-items:center; background:${isToday ? '#1a1a1a' : 'transparent'}; cursor:pointer;" data-action="cal-add-task" data-date="${dt.toISOString()}">
               <span style="font-size:12px; font-weight:500; ${numStyle}">${dayNum}</span>
               <div style="margin-top:2px; width:100%; display:flex; flex-direction:column; align-items:center; gap:1px; overflow:hidden;">
                 ${taskBars}
@@ -474,7 +475,7 @@
           const numStyle = isToday
             ? `background:#fff; color:#111; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:13px;`
             : `font-size:13px; color:${isToday ? 'white' : '#888'}; display:block;`;
-          return `<div class="cal-cell-new" style="min-height:120px; border-right:1px solid #2e2e2e; border-bottom:1px solid #2e2e2e; padding:8px; vertical-align:top; background:${isToday ? '#1f1f1f' : 'transparent'}; transition:background 0.2s; border-top:1px solid #2e2e2e;">
+          return `<div class="cal-cell-new" style="min-height:120px; border-right:1px solid #2e2e2e; border-bottom:1px solid #2e2e2e; padding:8px; vertical-align:top; background:${isToday ? '#1f1f1f' : 'transparent'}; transition:background 0.2s; border-top:1px solid #2e2e2e; cursor:pointer;" data-action="cal-add-task" data-date="${dt.toISOString()}">
             <div style="margin-bottom:4px;"><span style="${numStyle}">${dayNum}</span></div>
             ${chipsHtml}
           </div>`;
@@ -993,8 +994,18 @@
     }
 
     function render() {
+      // Save scroll positions across potential containers
+      const scrolls = [];
+      ['.home-view', '.list-content', '.cal-view', '#sidebar', '.grid-mobile'].forEach(sel => {
+        const el = document.querySelector(sel);
+        if (el) scrolls.push({ sel, top: el.scrollTop });
+      });
+
       const sb = document.querySelector('.sidebar');
-      if (state.sbCollapsed) sb.classList.add('collapsed'); else sb.classList.remove('collapsed');
+      if (sb) {
+        if (state.sbCollapsed) sb.classList.add('collapsed'); else sb.classList.remove('collapsed');
+      }
+      
       renderSidebar();
       renderBottomNav();
       renderMainContent();
@@ -1004,4 +1015,61 @@
       if (fab) {
         fab.style.display = (window.innerWidth <= 768 && currentView === 'home') ? 'flex' : 'none';
       }
+
+      // Restore scroll positions
+      scrolls.forEach(s => {
+        const el = document.querySelector(s.sel);
+        if (el) el.scrollTop = s.top;
+      });
+    }
+
+    function renderHierarchicalSelector() {
+      const drop = document.getElementById('qtSelectorDropdown');
+      if (!drop) return;
+      
+      let html = '';
+      const buildNode = (item, level) => {
+        const hasGroups = item.children && item.children.some(c => c.itemType === 'group' && !c.archived);
+        const isExpanded = qtExpandedIds.has(item.id);
+        const isSelected = qtSelectedId === item.id;
+        
+        let nodeHtml = `
+          <div class="qs-item-row">
+            <div style="display:flex; align-items:center;">
+              ${hasGroups ? `<div class="qs-toggle-arrow ${isExpanded ? 'expanded' : ''}" data-action="qt-toggle" data-id="${item.id}">▸</div>` : '<div style="width:36px;"></div>'}
+              <div class="qs-item ${isSelected ? 'selected' : ''}" data-action="qt-select" data-id="${item.id}" data-name="${escHtml(item.name)}">
+                ${escHtml(item.name)}
+              </div>
+            </div>
+        `;
+        if (hasGroups) {
+          nodeHtml += `<div class="qs-group-children ${isExpanded ? 'show' : ''}">
+            ${item.children.filter(c => c.itemType === 'group' && !c.archived).map(c => buildNode(c, level + 1)).join('')}
+          </div>`;
+        }
+        nodeHtml += `</div>`;
+        return nodeHtml;
+      };
+      
+      state.columns.forEach(col => {
+        const hasGroups = col.items && col.items.some(i => i.itemType === 'group' && !i.archived);
+        const isExpanded = qtExpandedIds.has(col.id);
+        const isSelected = qtSelectedId === col.id;
+        html += `
+          <div class="qs-item-row">
+            <div style="display:flex; align-items:center;">
+              ${hasGroups ? `<div class="qs-toggle-arrow ${isExpanded ? 'expanded' : ''}" data-action="qt-toggle" data-id="${col.id}">▸</div>` : '<div style="width:36px;"></div>'}
+              <div class="qs-item ${isSelected ? 'selected' : ''}" data-action="qt-select" data-id="${col.id}" data-name="${escHtml(col.name)}">
+                <strong>${escHtml(col.name)}</strong>
+              </div>
+            </div>
+        `;
+        if (hasGroups) {
+          html += `<div class="qs-group-children ${isExpanded ? 'show' : ''}">
+            ${col.items.filter(i => i.itemType === 'group' && !i.archived).map(i => buildNode(i, 1)).join('')}
+          </div>`;
+        }
+        html += `</div>`;
+      });
+      drop.innerHTML = html;
     }

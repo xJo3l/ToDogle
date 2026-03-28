@@ -520,6 +520,51 @@
         p.style.top = Math.max(10, rect.top - 20) + 'px';
         p.classList.add('show');
       }
+      else if (a === 'cal-add-task') {
+        const dateStr = btn.dataset.date;
+        const modal = document.getElementById('quickAddTaskModal');
+        const dateInput = document.getElementById('qtDate');
+        const nameInput = document.getElementById('qtName');
+        const impCheck = document.getElementById('qtImportant');
+        
+        nameInput.value = '';
+        impCheck.checked = false;
+        dateInput.value = new Date(dateStr).toISOString().split('T')[0];
+        
+        qtSelectedId = state.columns[0]?.id || null;
+        qtExpandedIds = new Set();
+        document.getElementById('qtSelectedText').textContent = state.columns[0]?.name || 'Select List or Toggle...';
+        document.getElementById('qtSelectorDropdown').style.display = 'none';
+        document.getElementById('qtSelectedDisplay').classList.remove('active');
+        
+        modal.classList.add('show');
+        setTimeout(() => nameInput.focus(), 50);
+      }
+      else if (a === 'toggle-qt-selector') {
+        const drop = document.getElementById('qtSelectorDropdown');
+        const disp = document.getElementById('qtSelectedDisplay');
+        const isHidden = drop.style.display === 'none';
+        if (isHidden) {
+          renderHierarchicalSelector();
+          drop.style.display = 'block';
+          disp.classList.add('active');
+        } else {
+          drop.style.display = 'none';
+          disp.classList.remove('active');
+        }
+      }
+      else if (a === 'qt-toggle') {
+        const id = btn.dataset.id;
+        if (qtExpandedIds.has(id)) qtExpandedIds.delete(id);
+        else qtExpandedIds.add(id);
+        renderHierarchicalSelector();
+      }
+      else if (a === 'qt-select') {
+        qtSelectedId = btn.dataset.id;
+        document.getElementById('qtSelectedText').textContent = btn.dataset.name;
+        document.getElementById('qtSelectorDropdown').style.display = 'none';
+        document.getElementById('qtSelectedDisplay').classList.remove('active');
+      }
       else if (a === 'cal-prev') { calendarDate.setMonth(calendarDate.getMonth() - 1); renderMainContent(); }
       else if (a === 'cal-next') { calendarDate.setMonth(calendarDate.getMonth() + 1); renderMainContent(); }
       else if (a === 'cal-today') { calendarDate = new Date(); renderMainContent(); }
@@ -792,6 +837,34 @@
       document.getElementById('groupModal').classList.remove('show');
     });
 
+    document.getElementById('qtCancel').addEventListener('click', () => { document.getElementById('quickAddTaskModal').classList.remove('show'); });
+    document.getElementById('qtCreate').addEventListener('click', () => {
+      const name = document.getElementById('qtName').value.trim();
+      if (!name || !qtSelectedId) return;
+      const date = document.getElementById('qtDate').value;
+      const important = document.getElementById('qtImportant').checked;
+      
+      let targetContainer = null;
+      for (const col of state.columns) {
+        if (col.id === qtSelectedId) { targetContainer = col; break; }
+        const found = findById(col.items, qtSelectedId);
+        if (found) { targetContainer = found; break; }
+      }
+      
+      if (targetContainer) {
+        const newTask = { id: generateId(), itemType: 'task', text: name, completed: false, important, dueDate: date || null, color: null };
+        if (targetContainer.itemType === 'group') {
+          if (!targetContainer.children) targetContainer.children = [];
+          targetContainer.children.push(newTask);
+        } else {
+          targetContainer.items.push(newTask);
+        }
+        saveState(); render();
+        showToast('Task added to ' + (targetContainer.name || targetContainer.text || 'List'));
+      }
+      document.getElementById('quickAddTaskModal').classList.remove('show');
+    });
+
     loadState();
     render();
 
@@ -819,6 +892,10 @@
       }
       if (document.getElementById('emojiPicker')?.classList.contains('show') && !e.target.closest('#emojiPicker') && !e.target.closest('[data-action="ep-open"]')) {
         document.getElementById('emojiPicker').classList.remove('show');
+      }
+      if (document.getElementById('qtSelectorDropdown')?.style.display === 'block' && !e.target.closest('#qtSelectorWrap')) {
+        document.getElementById('qtSelectorDropdown').style.display = 'none';
+        document.getElementById('qtSelectedDisplay').classList.remove('active');
       }
       if (e.target.closest('#sidebarOverlay')) {
         document.getElementById('sidebar')?.classList.remove('mobile-open');

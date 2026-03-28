@@ -97,6 +97,38 @@
       </div>
     </div>
   </div>
+  <div class="modal-overlay" id="quickAddTaskModal">
+    <div class="modal">
+      <h3>Quick Add Task</h3>
+      <div class="modal-field">
+        <label>Task Name</label>
+        <input type="text" id="qtName" placeholder="What needs to be done?">
+      </div>
+      <div class="modal-field">
+        <label>Add to List or Toggle</label>
+        <div id="qtSelectorWrap" class="custom-selector-wrap" style="position:relative; width:100%;">
+          <div id="qtSelectedDisplay" class="custom-selector-display" data-action="toggle-qt-selector" style="background:#1e1e1e; color:#e8e8e8; border:1px solid #2e2e2e; padding:10px 12px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; font-size:14px;">
+            <span id="qtSelectedText">Select List or Toggle...</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div id="qtSelectorDropdown" class="custom-selector-dropdown" style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:#1e1e1e; border:1px solid #2e2e2e; border-radius:6px; z-index:1000; max-height:240px; overflow-y:auto; box-shadow:0 8px 16px rgba(0,0,0,0.6);">
+          </div>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Due Date</label>
+        <input type="date" id="qtDate">
+      </div>
+      <div class="modal-field" style="display:flex; flex-direction:row; align-items:center; gap:10px; padding:4px 0;">
+        <input type="checkbox" id="qtImportant" style="width:20px; height:20px; cursor:pointer;">
+        <label style="margin:0; cursor:pointer; text-transform:none;">Mark as Important</label>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="qtCancel">Cancel</button>
+        <button class="modal-create" id="qtCreate">Create Task</button>
+      </div>
+    </div>
+  </div>
 
 
   <div class="cal-popup" id="calPopup">
