@@ -62,6 +62,13 @@
     }
 
     function today() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+    function toIsoDate(d) {
+      if (!d) return null;
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
     function parseDate(str) { if (!str) return null; const d = new Date(str + 'T00:00:00'); return isNaN(d) ? null : d; }
     function daysBetween(a, b) { return Math.round((b - a) / 86400000); }
     function formatDateShort(str) {

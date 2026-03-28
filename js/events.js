@@ -529,7 +529,7 @@
         
         nameInput.value = '';
         impCheck.checked = false;
-        dateInput.value = new Date(dateStr).toISOString().split('T')[0];
+        dateInput.value = dateStr;
         
         qtSelectedId = state.columns[0]?.id || null;
         qtExpandedIds = new Set();
@@ -863,6 +863,13 @@
         showToast('Task added to ' + (targetContainer.name || targetContainer.text || 'List'));
       }
       document.getElementById('quickAddTaskModal').classList.remove('show');
+    });
+
+    document.getElementById('qtName').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('qtCreate').click();
+    });
+    document.getElementById('modalName').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('modalCreate').click();
     });
 
     loadState();

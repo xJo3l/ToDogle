@@ -407,7 +407,7 @@
             : `color:${isOther ? '#2a2a2a' : '#888'};`;
 
           return `
-            <div class="cal-cell-mobile" style="border-right:1px solid #222; border-bottom:1px solid #222; padding:2px; display:flex; flex-direction:column; align-items:center; background:${isToday ? '#1a1a1a' : 'transparent'}; cursor:pointer;" data-action="cal-add-task" data-date="${dt.toISOString()}">
+            <div class="cal-cell-mobile" style="border-right:1px solid #222; border-bottom:1px solid #222; padding:2px; display:flex; flex-direction:column; align-items:center; background:${isToday ? '#1a1a1a' : 'transparent'}; cursor:pointer;" data-action="cal-add-task" data-date="${toIsoDate(dt)}">
               <span style="font-size:12px; font-weight:500; ${numStyle}">${dayNum}</span>
               <div style="margin-top:2px; width:100%; display:flex; flex-direction:column; align-items:center; gap:1px; overflow:hidden;">
                 ${taskBars}
@@ -481,7 +481,7 @@
           const numStyle = isToday
             ? `background:#fff; color:#111; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:13px;`
             : `font-size:13px; color:${isToday ? 'white' : '#888'}; display:block;`;
-          return `<div class="cal-cell-new" style="min-height:120px; border-right:1px solid #2e2e2e; border-bottom:1px solid #2e2e2e; padding:8px; vertical-align:top; background:${isToday ? '#1f1f1f' : 'transparent'}; transition:background 0.2s; border-top:1px solid #2e2e2e; cursor:pointer;" data-action="cal-add-task" data-date="${dt.toISOString()}">
+          return `<div class="cal-cell-new" style="min-height:120px; border-right:1px solid #2e2e2e; border-bottom:1px solid #2e2e2e; padding:8px; vertical-align:top; background:${isToday ? '#1f1f1f' : 'transparent'}; transition:background 0.2s; border-top:1px solid #2e2e2e; cursor:pointer;" data-action="cal-add-task" data-date="${toIsoDate(dt)}">
             <div style="margin-bottom:4px;"><span style="${numStyle}">${dayNum}</span></div>
             ${chipsHtml}
           </div>`;
