@@ -36,6 +36,12 @@
 
     document.addEventListener('click', e => {
 
+      if (e.target.closest('#sidebarOverlay')) {
+        document.getElementById('sidebar')?.classList.remove('mobile-open');
+        document.getElementById('sidebarOverlay')?.classList.remove('show');
+        return;
+      }
+
       const btn = e.target.closest('[data-action]');
       if (e.target.closest('.sb-settings-icon') == null && e.target.closest('.settings-dropdown') == null) {
         document.getElementById('sbSettings')?.classList.remove('show');

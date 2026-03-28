@@ -2,6 +2,7 @@
        RENDERING - SIDEBAR
        ================================================================ */
     function renderSidebar() {
+      const isMobile = window.innerWidth <= 768;
       const sb = document.getElementById('sidebar');
 
       // Count Overdue
@@ -16,12 +17,16 @@
       const svgComp = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
       const svgTrash = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
 
+      const sidebarToggleHtml = isMobile 
+        ? `<button class="sb-mobile-close" data-action="toggle-mobile-sidebar">✕</button>`
+        : `<button class="sb-toggle-btn" data-action="toggle-sb-collapse" style="margin-left:auto">${state.sbCollapsed ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>'}</button>`;
+
       let topNav = `
     <div class="sb-top">
       <div class="app-logo-wrap">
         <svg fill="none" stroke="#fff" stroke-linecap="round" stroke-width="2.5" viewBox="0 0 24 24" height="24" width="24" style="flex-shrink:0;"><rect height="18" rx="2" ry="2" width="18" x="3" y="3"></rect><polyline points="9 11 12 14 22 4"></polyline></svg>
         <div class="app-logo" style="color:#e8e8e8;background:none;filter:none;-webkit-text-fill-color:white;min-width:0;overflow:hidden;">ToDogle</div>
-        <button class="sb-toggle-btn" data-action="toggle-sb-collapse" style="margin-left:auto">${state.sbCollapsed ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>'}</button>
+        ${sidebarToggleHtml}
       </div>
       <a href="#" class="sb-nav-item${currentView === 'home' ? ' active' : ''}" data-action="nav" data-view="home">${svgHome} Home</a>
       <a href="#" class="sb-nav-item${currentView === 'calendar' ? ' active' : ''}" data-action="nav" data-view="calendar">${svgCal} Calendar</a>
@@ -126,6 +131,8 @@
     let lastRenderedView = null;
     function renderMainContent() {
       const mc = document.getElementById('mainContent');
+      if (currentView === 'calendar') mc.classList.add('full-width-view');
+      else mc.classList.remove('full-width-view');
 
       if (currentView === 'home') mc.innerHTML = buildHomeView();
       else if (currentView === 'calendar') mc.innerHTML = buildCalendarView();
@@ -185,7 +192,7 @@
               <div class="home-col-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <span style="font-size:16px; font-weight:600; color:#e8e8e8;">${escHtml(col.name)}</span>
                 <div style="position:relative">
-                  <div class="action-btn list-sweep-btn" data-action="toggle-list-sweep-menu" data-id="${col.id}" style="font-size:16px; opacity:1; cursor:pointer; color:#8b5cf6;">⋯</div>
+                  <div class="action-btn list-sweep-btn" data-action="toggle-list-sweep-menu" data-id="${col.id}" style="font-size:16px; opacity:1; cursor:pointer; color:#e8e8e8;">⋯</div>
                   <div class="group-dropdown" id="listSweepMenu-${col.id}" style="right:0; top:100%;">
                     <div class="group-dropdown-item${completedInCol === 0 ? ' disabled' : ''}" data-action="list-sweep" data-id="${col.id}">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
@@ -210,15 +217,12 @@
         }
 
         const pPct = overallPct * 100;
-        const mobileHeader = getMobileHeaderHtml('ToDogle', { actionType: 'sweep-all' });
+        const mobileHeader = getMobileHeaderHtml('Home', { actionType: 'sweep-all' });
 
         return `
           <div class="view-header">
             ${mobileHeader}
-            <div class="mobile-greeting">
-              <div class="mobile-progress-stat"><span>${completedTasks}</span>/${totalTasks}</div>
-              <div class="mobile-greeting-text">Good morning, <span>Guest User</span></div>
-            </div>
+            <div style="margin-bottom:12px;"></div>
             ${pillsHtml}
           </div>
           <div class="home-view" style="padding-top:0">
@@ -345,10 +349,78 @@
 
       const isMobile = window.innerWidth <= 768;
       const mobileHeader = getMobileHeaderHtml('Calendar');
-      let html = `<div class="view-header">${mobileHeader}</div><div class="cal-view">`;
+      let html = `<div class="view-header">${mobileHeader}</div><div class="cal-view" style="display:flex; flex-direction:column; flex:1; overflow:hidden; height:100%;">`;
 
-      // Header
-      html += `
+      if (isMobile && calViewType === 'month') {
+        const mDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        const numRows = Math.ceil(totalCells / 7);
+        
+        // Unified Mobile Header built inside Calendar view to avoid duplicates
+        html = `
+          <div class="mobile-calendar-header" style="display:flex; align-items:center; gap:16px; padding:12px 16px; background:#191919; border-bottom:1px solid #222; width:100%; box-sizing:border-box;">
+            <button class="mobile-menu-btn" data-action="toggle-mobile-sidebar">
+              <span style="font-size: 24px; line-height: 1;">☰</span>
+            </button>
+            <div style="flex: 1;">
+               <div style="font-size:18px; font-weight:700; color:#e8e8e8;">${months[month]} ${year}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <button data-action="cal-prev" style="background:transparent; border:none; color:#aaa; font-size:20px; padding:4px 8px;">‹</button>
+              <button data-action="cal-today" style="background:#222; border:1px solid #333; border-radius:12px; color:#e8e8e8; padding:2px 12px; font-size:12px;">Today</button>
+              <button data-action="cal-next" style="background:transparent; border:none; color:#aaa; font-size:20px; padding:4px 8px;">›</button>
+            </div>
+          </div>
+          <div class="cal-view" style="display:flex; flex-direction:column; flex:1; overflow:hidden; width:100%;">
+            <div style="display:grid; grid-template-columns:repeat(7, 1fr); border-bottom:1px solid #222; background:transparent; width:100%;">
+              ${mDays.map(d => `<div style="text-align:center; font-size:10px; color:#555; padding:4px 0;">${d}</div>`).join('')}
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(7, 1fr); grid-template-rows:repeat(${numRows}, 1fr); flex:1; background:#111; width:100%;">
+        `;
+
+        function buildMobileDayCell(dt, isOther, isToday, all) {
+          const dayTasks = all.filter(i => {
+            if (i.completed || i.archived) return false;
+            const due = i.itemType === 'task' ? i.dueDate : i.deadline;
+            return due && parseDate(due)?.toDateString() === dt.toDateString();
+          });
+
+          const dayNum = dt.getDate();
+          let taskBars = '';
+          const limit = 3;
+          for (let j = 0; j < dayTasks.length; j++) {
+            if (j >= limit) break;
+            const t = dayTasks[j];
+            const name = t.itemType === 'task' ? t.text : t.name;
+            const color = t.color || '#333';
+            taskBars += `<div style="height:14px; background:${color}; width:100%; margin:1px 0; border-radius:3px; font-size:9px; line-height:14px; color:#fff; padding:0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; box-sizing:border-box; font-weight:500;">${escHtml(name)}</div>`;
+          }
+
+          const numStyle = isToday 
+            ? `background:#e8e8e8; color:#111; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center;`
+            : `color:${isOther ? '#2a2a2a' : '#888'};`;
+
+          return `
+            <div class="cal-cell-mobile" style="border-right:1px solid #222; border-bottom:1px solid #222; padding:2px; display:flex; flex-direction:column; align-items:center; background:${isToday ? '#1a1a1a' : 'transparent'};">
+              <span style="font-size:12px; font-weight:500; ${numStyle}">${dayNum}</span>
+              <div style="margin-top:2px; width:100%; display:flex; flex-direction:column; align-items:center; gap:1px; overflow:hidden;">
+                ${taskBars}
+              </div>
+            </div>
+          `;
+        }
+
+        for (let i = firstDay - 1; i >= 0; i--) html += buildMobileDayCell(new Date(year, month - 1, daysInPrev - i), true, false, all);
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dt = new Date(year, month, d);
+          html += buildMobileDayCell(dt, false, dt.toDateString() === tStr, all);
+        }
+        const trailingCount = totalCells - firstDay - daysInMonth;
+        for (let i = 1; i <= trailingCount; i++) html += buildMobileDayCell(new Date(year, month + 1, i), true, false, all);
+        
+        html += `</div>`;
+      } else if (calViewType === 'month') {
+        // Desktop Header
+        html += `
   <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 0;">
     <div style="display:flex; align-items:center; gap:8px;">
       <button data-action="cal-today" style="background:transparent; border:0.5px solid #3a3a3a; border-radius:6px; color:#aaa; padding:5px 14px; cursor:pointer; font-size:13px;">Today</button>
@@ -365,7 +437,6 @@
     </div>
   </div>`;
 
-      if (calViewType === 'month') {
         // Day headers
         html += `<div style="display:grid; grid-template-columns:repeat(7, 1fr);">`;
         const mDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -377,16 +448,12 @@
         // Grid
         html += `<div style="display:grid; grid-template-columns:repeat(7, 1fr); flex:1; overflow-y:auto; border-left:1px solid #2e2e2e;">`;
 
-        // Helper to build a single day cell with task chips
         function buildDayCell(dt, isOther, isToday, all) {
           const dayTasks = all.filter(i => {
             if (i.completed || i.archived) return false;
-            // Only show items with a *manual* deadline (ignore inherited effectiveDueDate)
             const due = i.itemType === 'task' ? i.dueDate : i.deadline;
-            if (!due) return false;
-            return parseDate(due)?.toDateString() === dt.toDateString();
+            return due && parseDate(due)?.toDateString() === dt.toDateString();
           });
-
           let chipsHtml = '';
           const limit = 3;
           for (let j = 0; j < dayTasks.length; j++) {
@@ -399,46 +466,26 @@
             let bColor = 'transparent';
             const colIdx = state.columns.findIndex(c => c.id === i_item.colId || c.items.some(x => x.id === i_item.id || (x.children && x.children.some(y => y.id === i_item.id))));
             if (colIdx !== -1) bColor = listColors[colIdx % listColors.length];
-
             const chipBg = i_item.color ? i_item.color : '#2a2a2a';
             const chipTextColor = i_item.color ? '#fff' : '#ccc';
-
             chipsHtml += `<div class="cal-task-chip-new" style="border-left:1px solid ${bColor}; background:${chipBg}; border-radius:4px; padding:2px 8px; font-size:12px; color:${chipTextColor}; margin-bottom:2px; width:100%; box-sizing:border-box; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" data-action="cal-item-click" data-name="${escHtml(name)}" data-bread="${escHtml(getBreadcrumb(i_item))}" data-date="${formatDateShort(dt)}">${escHtml(name)}</div>`;
           }
-
           const dayNum = dt.getDate();
-          const numColor = isToday ? 'white' : '#888';
           const numStyle = isToday
-            ? `background:#4A9EFF; color:white; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:13px;`
-            : `font-size:13px; color:${numColor}; display:block;`;
-          const cellBg = isToday ? '#1f1f1f' : 'transparent';
-
-          return `<div class="cal-cell-new" style="min-height:120px; border-right:1px solid #2e2e2e; border-bottom:1px solid #2e2e2e; padding:8px; vertical-align:top; background:${cellBg}; transition:background 0.2s; border-top:1px solid #2e2e2e;">
-        <div style="margin-bottom:4px;"><span style="${numStyle}">${dayNum}</span></div>
-        ${chipsHtml}
-      </div>`;
+            ? `background:#fff; color:#111; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:13px;`
+            : `font-size:13px; color:${isToday ? 'white' : '#888'}; display:block;`;
+          return `<div class="cal-cell-new" style="min-height:120px; border-right:1px solid #2e2e2e; border-bottom:1px solid #2e2e2e; padding:8px; vertical-align:top; background:${isToday ? '#1f1f1f' : 'transparent'}; transition:background 0.2s; border-top:1px solid #2e2e2e;">
+            <div style="margin-bottom:4px;"><span style="${numStyle}">${dayNum}</span></div>
+            ${chipsHtml}
+          </div>`;
         }
-
-        // leading (previous month days)
-        for (let i = firstDay - 1; i >= 0; i--) {
-          const dt = new Date(year, month - 1, daysInPrev - i);
-          html += buildDayCell(dt, true, false, all);
-        }
-
-        // current month
+        for (let i = firstDay - 1; i >= 0; i--) html += buildDayCell(new Date(year, month - 1, daysInPrev - i), true, false, all);
         for (let d = 1; d <= daysInMonth; d++) {
           const dt = new Date(year, month, d);
-          const isToday = dt.toDateString() === tStr;
-          html += buildDayCell(dt, false, isToday, all);
+          html += buildDayCell(dt, false, dt.toDateString() === tStr, all);
         }
-
-        // trailing (next month days)
         const trailingCount = totalCells - firstDay - daysInMonth;
-        for (let i = 1; i <= trailingCount; i++) {
-          const dt = new Date(year, month + 1, i);
-          html += buildDayCell(dt, true, false, all);
-        }
-
+        for (let i = 1; i <= trailingCount; i++) html += buildDayCell(new Date(year, month + 1, i), true, false, all);
         html += `</div>`;
       } else if (calViewType === 'week') {
         // Basic week view placeholder
@@ -449,12 +496,24 @@
         });
         html += `</div><div class="empty-state" style="padding:100px 20px;"><div style="color:#666;font-size:14px;">Week view coming soon</div></div>`;
       } else {
-        // Day view placeholder
-        html += `<div class="empty-state" style="padding:100px 20px;"><div style="color:#666;font-size:14px;">Day view coming soon</div></div>`;
+        html += buildDayView(calendarDate);
       }
 
       html += `</div>`;
       return html;
+    }
+
+    function buildDayView(date) {
+      const all = getAll();
+      const tasks = all.filter(i => {
+        if (i.completed || i.archived) return false;
+        const due = i.itemType === 'task' ? i.dueDate : i.deadline;
+        return due && parseDate(due)?.toDateString() === date.toDateString();
+      });
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const dateStr = monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+      const emptySvg = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3a3a3a" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+      return buildFlatList(tasks, dateStr, '', emptySvg, 'No tasks for this day', 'Enjoy your free time!');
     }
 
     function buildImportantView() {
@@ -605,7 +664,7 @@
     <div class="${checkCls}" data-action="toggle-task" data-id="${task.id}" data-col="${colId}" style="width:16px;height:16px;border-width:1.5px;font-size:10px">✓</div>
     <div class="task-info">
       <div style="display:flex;align-items:center;min-width:0;">
-        <span class="${textCls} home-task-name" style="font-size:13px;color:${task.completed ? '#888' : '#aaa'};display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(task.text)}</span>
+        <span class="${textCls} home-task-name" style="color:${task.completed ? '#888' : '#aaa'};display:block;">${escHtml(task.text)}</span>
         ${isOvd ? '<span class="overdue-dot" style="margin-right:8px;flex-shrink:0;"></span>' : ''}
         ${duChip ? `<div style="flex-shrink:0;">${duChip}</div>` : ''}
       </div>
@@ -704,7 +763,7 @@
             <div class="home-group-header" style="cursor:pointer;display:flex;align-items:center;padding:6px 0;position:relative;" data-action="toggle-home-group" data-id="${group.id}">
               <div style="font-size:10px;color:#555;width:16px;text-align:left;transition:transform 0.2s;flex-shrink:0;">${arrow}</div>
               <div style="display:flex;align-items:center;min-width:0;flex:1;margin-left:8px;">
-                <div class="home-group-name" style="font-size:14px;color:#ccc;font-weight:500;flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(group.name)}</div>
+                <div class="home-group-name" style="color:#ccc;font-weight:500;flex:0 1 auto;">${escHtml(group.name)}</div>
                 ${chip ? `<div style="margin-left:8px;flex-shrink:0;">${chip}</div>` : ''}
               </div>
               <div style="position:relative;margin-left:4px;flex-shrink:0;">
