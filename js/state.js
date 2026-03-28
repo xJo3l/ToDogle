@@ -41,7 +41,8 @@
       ];
       return {
         columns: cols.map(c => ({ id: generateId(), name: c.name, icon: c.icon, items: [], completedCollapsed: true })),
-        trash: []
+        trash: [],
+        colWidths: {}
       };
     }
 
@@ -53,6 +54,7 @@
       if (!state) state = defaultState();
       if (!state.trash) state.trash = [];
       if (state.sbCollapsed === undefined) state.sbCollapsed = false;
+      if (state.colWidths === undefined) state.colWidths = {};
     }
 
     function saveState() {

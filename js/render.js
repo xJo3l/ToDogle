@@ -255,8 +255,13 @@
         visibleCols.forEach(data => {
           const col = data.col;
           const completedInCol = countCompletedTasks(col);
+          const customWidth = state.colWidths && state.colWidths[col.id];
+          const colStyle = customWidth 
+            ? `flex:0 0 ${customWidth}px; width:${customWidth}px; position:relative;`
+            : `${cStyle} position:relative;`;
+
           contentHtml += `
-          <div style="${cStyle}">
+          <div class="home-col" data-col-id="${col.id}" style="${colStyle}">
             <div class="home-col-header" style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:500; color:#aaa; padding-bottom:8px; border-bottom:1px solid #2a2a2a; margin-bottom:12px;">
               <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml(col.name)}</span>
               <div style="position:relative">
@@ -270,6 +275,7 @@
               </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:16px;">${data.colContent}</div>
+            <div class="col-resizer" data-id="${col.id}"></div>
           </div>`;
         });
       }
@@ -659,9 +665,10 @@
       const checkCls = task.completed ? 'task-checkbox checked' : 'task-checkbox';
       const textCls = task.completed ? 'task-text done' : 'task-text';
       const taskAccent = task.color ? `border-left:3px solid ${task.color};padding-left:11px;` : '';
+      const depthCls = (depth > 0) ? ` depth-${depth}` : '';
 
       if (isHome) {
-        return `<div class="task-item${compCls} home-task-row" data-task-id="${task.id}" style="padding:0;height:28px;background:transparent;border:none;position:relative;">
+        return `<div class="task-item${compCls}${depthCls} home-task-row" data-task-id="${task.id}" style="padding:0;height:28px;background:transparent;border:none;position:relative;">
     <div class="${checkCls}" data-action="toggle-task" data-id="${task.id}" data-col="${colId}" style="width:16px;height:16px;border-width:1.5px;font-size:10px">✓</div>
     <div class="task-info">
       <div style="display:flex;align-items:center;min-width:0;">
@@ -688,7 +695,7 @@
   </div>`;
       }
 
-      return `<div class="task-item${compCls}" data-task-id="${task.id}" draggable="true" style="${taskAccent}">
+      return `<div class="task-item${compCls}${depthCls}" data-task-id="${task.id}" draggable="true" style="${taskAccent}">
     <div class="${checkCls}" data-action="toggle-task" data-id="${task.id}" data-col="${colId}">✓</div>
     <div class="task-info">
       <div style="display:flex;align-items:center;min-width:0;">
@@ -759,9 +766,11 @@
         const completedTasksCount = countCompletedTasks(group);
         const maxH = col ? '0' : '1000px'; // A sufficiently large value for expanded content
         const groupAccent = group.color ? `border-left:3px solid ${group.color};padding-left:5px;` : '';
+        const depthCls = (depth > 0) ? ` depth-${depth}` : '';
+        const levelCls = (depth >= 0) ? ` level-${depth}` : '';
         return `
-          <div class="home-group" data-group-id="${group.id}" style="position:relative">
-            <div class="home-group-header" style="cursor:pointer;display:flex;align-items:center;padding:6px 0;position:relative;" data-action="toggle-home-group" data-id="${group.id}">
+          <div class="home-group${depthCls}" data-group-id="${group.id}" style="position:relative">
+            <div class="home-group-header${levelCls}" style="cursor:pointer;display:flex;align-items:center;padding:6px 0;position:relative;" data-action="toggle-home-group" data-id="${group.id}">
               <div style="font-size:10px;color:#555;width:16px;text-align:left;transition:transform 0.2s;flex-shrink:0;">${arrow}</div>
               <div style="display:flex;align-items:center;min-width:0;flex:1;margin-left:8px;">
                 <div class="home-group-name" style="color:#ccc;font-weight:500;flex:0 1 auto;">${escHtml(group.name)}</div>
@@ -815,9 +824,12 @@
 
       const groupAccentList = group.color ? `border-left:3px solid ${group.color};padding-left:11px;` : '';
 
+      const depthCls = (depth > 0) ? ` depth-${depth}` : '';
+      const levelCls = (depth >= 0) ? ` level-${depth}` : '';
+
       return `
-  <div class="toggle-group" data-group-id="${group.id}" draggable="true">
-    <div class="toggle-header" data-action="toggle-collapse" data-id="${group.id}" style="${groupAccentList}">
+  <div class="toggle-group${depthCls}" data-group-id="${group.id}" draggable="true">
+    <div class="toggle-header${levelCls}" data-action="toggle-collapse" data-id="${group.id}" style="${groupAccentList}">
       <div class="toggle-arrow${col ? ' collapsed' : ''}" data-arrow-id="${group.id}">▼</div>
       <div style="display:flex;align-items:center;min-width:0;flex:1;">
         <div class="toggle-name" style="flex:0 1 auto;">${escHtml(group.name)}</div>

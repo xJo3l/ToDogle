@@ -924,3 +924,40 @@
 
     render();
 
+    let isResizingCol = false;
+    let resizingColId = null;
+    document.addEventListener('mousedown', e => {
+      const resizer = e.target.closest('.col-resizer');
+      if (resizer) {
+        isResizingCol = true;
+        resizingColId = resizer.dataset.id;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      }
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (!isResizingCol) return;
+      const colEl = document.querySelector(`.home-col[data-col-id="${resizingColId}"]`);
+      if (!colEl) return;
+      const rect = colEl.getBoundingClientRect();
+      let newWidth = e.clientX - rect.left;
+      const minW = 200;
+      const maxW = 1200;
+      if (newWidth < minW) newWidth = minW;
+      if (newWidth > maxW) newWidth = maxW;
+      state.colWidths[resizingColId] = newWidth;
+      colEl.style.flex = `0 0 ${newWidth}px`;
+      colEl.style.width = `${newWidth}px`;
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isResizingCol) {
+        isResizingCol = false;
+        resizingColId = null;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        saveState();
+      }
+    });
+
