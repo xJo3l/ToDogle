@@ -393,6 +393,64 @@
       }
     }
 
+    function getSidebarMaterialIcon(name, fallback = 'folder') {
+      const iconMap = {
+        home: 'home',
+        ai: 'auto_awesome',
+        calendar: 'calendar_month',
+        folder: 'folder_open',
+        'book-open': 'menu_book',
+        briefcase: 'work',
+        star: 'star',
+        bookmark: 'bookmark',
+        tag: 'sell',
+        flag: 'flag',
+        zap: 'bolt',
+        clipboard: 'assignment',
+        layers: 'layers',
+        pencil: 'edit',
+        lightbulb: 'lightbulb',
+        globe: 'public',
+        code: 'code',
+        music: 'music_note',
+        bell: 'notifications',
+        'graduation-cap': 'school',
+        list: 'view_list',
+        cpu: 'memory',
+        heart: 'favorite',
+        camera: 'photo_camera',
+        coffee: 'coffee',
+        compass: 'explore',
+        dumbbell: 'fitness_center',
+        film: 'movie',
+        'flask-conical': 'science',
+        'gamepad-2': 'stadia_controller',
+        gift: 'redeem',
+        hammer: 'construction',
+        headphones: 'headphones',
+        inbox: 'inbox',
+        key: 'key',
+        leaf: 'eco',
+        map: 'map',
+        microscope: 'biotech',
+        moon: 'dark_mode',
+        palette: 'palette',
+        plane: 'flight',
+        rocket: 'rocket_launch',
+        shield: 'shield',
+        'shopping-cart': 'shopping_cart',
+        sun: 'wb_sunny',
+        target: 'track_changes',
+        terminal: 'terminal',
+        'tree-pine': 'park',
+        trophy: 'emoji_events',
+        umbrella: 'umbrella',
+        user: 'person',
+        wallet: 'wallet'
+      };
+      return iconMap[name] || iconMap[fallback] || 'folder_open';
+    }
+
     function filterIconPicker(query) {
       const grid = document.getElementById('lpGrid');
       if (!grid) return;
@@ -404,10 +462,9 @@
       }
       grid.innerHTML = filtered.map(name =>
         `<div class="ep-emoji" data-action="lp-select" data-icon="${name}" title="${name}" style="display:flex;align-items:center;justify-content:center;color:#a0a0a0;width:32px;height:32px">
-          <i data-lucide="${name}" style="width:18px;height:18px;stroke:#a0a0a0;stroke-width:1.5"></i>
+          <span class="material-symbols-rounded ep-symbol">${getSidebarMaterialIcon(name)}</span>
         </div>`
       ).join('');
-      renderLucideIcons();
     }
 
     function filterEmojiPicker(query) { filterIconPicker(query); }

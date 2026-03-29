@@ -4,6 +4,63 @@
     function renderSidebar() {
       const isMobile = window.innerWidth <= 768;
       const sb = document.getElementById('sidebar');
+      const getSidebarIcon = (name, fallback = 'folder') => {
+        const iconMap = {
+          home: 'home',
+          ai: 'auto_awesome',
+          calendar: 'calendar_month',
+          folder: 'folder_open',
+          'book-open': 'menu_book',
+          briefcase: 'work',
+          star: 'star',
+          bookmark: 'bookmark',
+          tag: 'sell',
+          flag: 'flag',
+          zap: 'bolt',
+          clipboard: 'assignment',
+          layers: 'layers',
+          pencil: 'edit',
+          lightbulb: 'lightbulb',
+          globe: 'public',
+          code: 'code',
+          music: 'music_note',
+          bell: 'notifications',
+          'graduation-cap': 'school',
+          list: 'view_list',
+          cpu: 'memory',
+          heart: 'favorite',
+          camera: 'photo_camera',
+          coffee: 'coffee',
+          compass: 'explore',
+          dumbbell: 'fitness_center',
+          film: 'movie',
+          'flask-conical': 'science',
+          'gamepad-2': 'stadia_controller',
+          gift: 'redeem',
+          hammer: 'construction',
+          headphones: 'headphones',
+          inbox: 'inbox',
+          key: 'key',
+          leaf: 'eco',
+          map: 'map',
+          microscope: 'biotech',
+          moon: 'dark_mode',
+          palette: 'palette',
+          plane: 'flight',
+          rocket: 'rocket_launch',
+          shield: 'shield',
+          'shopping-cart': 'shopping_cart',
+          sun: 'wb_sunny',
+          target: 'track_changes',
+          terminal: 'terminal',
+          'tree-pine': 'park',
+          trophy: 'emoji_events',
+          umbrella: 'umbrella',
+          user: 'person',
+          wallet: 'wallet'
+        };
+        return iconMap[name] || iconMap[fallback] || 'folder_open';
+      };
 
       // Count Overdue
       const t = today();
@@ -29,11 +86,9 @@
         <div class="app-logo" style="color:#e8e8e8;background:none;filter:none;-webkit-text-fill-color:white;min-width:0;overflow:hidden;">ToDogle</div>
         ${sidebarToggleHtml}
       </div>
-      <a href="#" class="sb-nav-item${currentView === 'home' ? ' active' : ''}" data-action="nav" data-view="home">${svgHome} Home</a>
-      <a href="#" class="sb-nav-item${currentView === 'ai' ? ' active' : ''}" data-action="nav" data-view="ai">${svgAi} AI</a>
-      <a href="#" class="sb-nav-item${currentView === 'calendar' ? ' active' : ''}" data-action="nav" data-view="calendar">${svgCal} Calendar</a>
-      <a href="#" class="sb-nav-item${currentView === 'important' ? ' active' : ''}" data-action="nav" data-view="important">${svgStar} Important</a>
-      <a href="#" class="sb-nav-item${currentView === 'overdue' ? ' active' : ''}" data-action="nav" data-view="overdue">${svgOvd} Overdue ${ovdBadge}</a>
+      <a href="#" class="sb-nav-item${currentView === 'home' ? ' active' : ''}" data-action="nav" data-view="home"><span class="material-symbols-rounded sb-mi">${getSidebarIcon('home')}</span> Home</a>
+      <a href="#" class="sb-nav-item${currentView === 'ai' ? ' active' : ''}" data-action="nav" data-view="ai"><span class="material-symbols-rounded sb-mi">${getSidebarIcon('ai')}</span> AI</a>
+      <a href="#" class="sb-nav-item${currentView === 'calendar' ? ' active' : ''}" data-action="nav" data-view="calendar"><span class="material-symbols-rounded sb-mi">${getSidebarIcon('calendar')}</span> Calendar</a>
     </div>
     <div class="sb-divider"></div>
   `;
@@ -58,11 +113,10 @@
         const starIcon = col.important ? '<span style="color:#fbbf24;font-size:12px;margin-left:6px">★</span>' : '';
         const isActiveCol = currentView === col.id;
         const iconName = (col.icon && lucideIconList.includes(col.icon)) ? col.icon : 'folder';
-        const iconColor = isActiveCol ? '#ffffff' : '#a0a0a0';
         listsHtml += `<div class="sb-list-item${isActiveCol ? ' active' : ''}" data-action="nav" data-view="${col.id}" draggable="true" data-index="${i}">
       
       <div class="sidebar-lucide-icon" data-action="lp-open" data-col="${col.id}" title="Change icon">
-        <i data-lucide="${iconName}" style="width:16px;height:16px;stroke:${iconColor};stroke-width:1.5;fill:none;"></i>
+        <span class="material-symbols-rounded sb-list-mi">${getSidebarIcon(iconName)}</span>
       </div>
       <div style="flex:1;display:flex;align-items:center;min-width:0;">
         <span class="sb-list-name-txt">${escHtml(col.name)}</span>
@@ -101,8 +155,6 @@
 
       sb.innerHTML = topNav + listsHtml + botNav;
       if (addingColNew) setTimeout(() => document.getElementById('newColInput')?.focus(), 50);
-      // Render Lucide icons after sidebar HTML is set
-      renderLucideIcons(sb);
     }
 
     /* ================================================================
@@ -158,7 +210,7 @@
     const svgStar = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
     const svgOvd = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
 
-    function buildHomeView() {
+    function buildHomeViewLegacy() {
       const all = getAll();
       const homeTasks = all.filter(i => i.itemType === 'task' && isTaskInCategory(i, homeFilter, i.effectiveDueDate));
       const totalTasks = homeTasks.length;
@@ -318,6 +370,137 @@
         </div>
         <div class="home-view" style="padding-top:0">
           ${contentHtml}
+        </div>
+      `;
+    }
+
+    function buildHomeView() {
+      const all = getAll();
+      const homeTasks = all.filter(i => i.itemType === 'task' && isTaskInCategory(i, homeFilter, i.effectiveDueDate));
+      const totalTasks = homeTasks.length;
+      const completedTasks = homeTasks.filter(i => i.completed).length;
+      const overdueCount = all.filter(i => i.itemType === 'task' && !i.completed && (i.effectiveDueDate || i.dueDate) && parseDate(i.effectiveDueDate || i.dueDate) < today()).length;
+      const importantCount = all.filter(i => i.itemType === 'task' && !i.completed && i.important).length;
+      const todayCount = all.filter(i => i.itemType === 'task' && !i.completed && isTaskInCategory(i, 'today', i.effectiveDueDate)).length;
+      const isMobile = window.innerWidth <= 768;
+
+      const pills = [
+        { id: 'today', label: 'Today' },
+        { id: '5days', label: 'In 5 Days' },
+        { id: '10days', label: 'In 10 Days' },
+        { id: 'all', label: 'All' }
+      ];
+
+      let pillsHtml = `<div class="home-v2-pills ${isMobile ? 'hpill-container' : ''}" style="${isMobile ? '' : 'display:flex;gap:8px;'}">`;
+      pills.forEach(p => {
+        const act = (homeFilter === p.id) ? 'active ' : '';
+        pillsHtml += `<button class="hpill ${act}" data-action="set-home-filter" data-filter="${p.id}">${p.label}</button>`;
+      });
+      pillsHtml += '</div>';
+
+      let contentHtml = '<div class="home-v2-columns">';
+      const visibleCols = [];
+      state.columns.forEach((col) => {
+        let colContent = '';
+        for (const item of col.items) {
+          colContent += renderItem(item, 0, col.id, homeFilter, true);
+        }
+        if (colContent !== '') visibleCols.push({ col, colContent });
+      });
+
+      const anyVisible = visibleCols.length > 0;
+      if (anyVisible) {
+        const cStyle = visibleCols.length <= 3
+          ? 'flex: 1 1 calc(25% - 18px); min-width: 260px; max-width: 340px;'
+          : 'flex: 1 1 calc(25% - 18px); min-width: 220px; max-width: calc(25% - 18px);';
+
+        visibleCols.forEach(data => {
+          const col = data.col;
+          const completedInCol = countCompletedTasks(col);
+          const customWidth = state.colWidths && state.colWidths[col.id];
+          const colStyle = customWidth
+            ? `flex:0 0 ${customWidth}px; width:${customWidth}px; position:relative;`
+            : `${cStyle} position:relative;`;
+
+          contentHtml += `
+          <div class="home-col" data-col-id="${col.id}" style="${colStyle}">
+            <div class="home-col-header" style="display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:500; color:#aaa; padding-bottom:8px; border-bottom:1px solid #2a2a2a; margin-bottom:12px;">
+              <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml(col.name)}</span>
+              <div style="position:relative">
+                <div class="action-btn list-sweep-btn" data-action="toggle-list-sweep-menu" data-id="${col.id}" style="font-size:16px; opacity:0; transition:opacity 0.2s; cursor:pointer;">...</div>
+                <div class="group-dropdown" id="listSweepMenu-${col.id}" style="right:0; top:100%;">
+                  <div class="group-dropdown-item${completedInCol === 0 ? ' disabled' : ''}" data-action="list-sweep" data-id="${col.id}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
+                    Sweep
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px;">${data.colContent}</div>
+            <div class="col-resizer" data-id="${col.id}"></div>
+          </div>`;
+        });
+      }
+      contentHtml += '</div>';
+
+      if (!anyVisible) {
+        contentHtml = `
+          <div class="empty-state" style="padding:80px 20px;">
+            <div style="color:#666;font-size:14px;font-weight:500">No tasks due in this period</div>
+            <div style="color:#444;font-size:12px;margin-top:4px">Switch to All to see everything</div>
+          </div>
+        `;
+      }
+
+      const mentorMessage = todayCount > 0
+        ? `You have ${todayCount} task${todayCount === 1 ? '' : 's'} today. The focus should be on finishing your top priority first.`
+        : `You are clear for today. Pull one high-impact task forward and build momentum early.`;
+
+      return `
+        <div class="home-v2-wrap">
+          ${isMobile ? getMobileHeaderHtml('Home') : ''}
+          <div class="home-v2-search-wrap">
+            <div class="home-v2-search">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" placeholder="Search for tasks, notes, or AI commands...">
+            </div>
+          </div>
+
+          <div class="home-v2-hero">
+            <div class="home-v2-mentor">
+              <div class="home-v2-greeting">Good Morning, Guest User!</div>
+              <div class="home-v2-mentor-text">${escHtml(mentorMessage)}</div>
+            </div>
+            <div class="home-v2-quick">
+              <button class="home-v2-quick-card" data-action="nav" data-view="important">
+                <span>Important</span>
+                <span class="home-v2-badge important">${importantCount}</span>
+              </button>
+              <button class="home-v2-quick-card" data-action="nav" data-view="overdue">
+                <span>Overdue</span>
+                <span class="home-v2-badge overdue">${overdueCount}</span>
+              </button>
+              <button class="home-v2-quick-card progress" data-action="nav" data-view="completed">
+                <span>Check Progress</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="home-v2-section-head">
+            <div class="home-v2-section-left">
+              <div class="home-v2-section-title">My Tasks</div>
+              ${pillsHtml}
+            </div>
+            <div class="home-v2-section-right">
+              <span class="home-v2-progress">${completedTasks}/${totalTasks}</span>
+              <button class="home-v2-sweep" data-action="sweep-all">Sweep All</button>
+            </div>
+          </div>
+
+          <div class="home-v2-board">
+            ${contentHtml}
+          </div>
         </div>
       `;
     }
@@ -1112,9 +1295,8 @@
 
       const navItems = [
         { id: 'home', label: 'Home', icon: 'home' },
-        { id: 'calendar', label: 'Calendar', icon: 'calendar' },
-        { id: 'important', label: 'Important', icon: 'star' },
-        { id: 'overdue', label: 'Overdue', icon: 'clock' }
+        { id: 'ai', label: 'AI', icon: 'sparkles' },
+        { id: 'calendar', label: 'Calendar', icon: 'calendar' }
       ];
 
       bn.innerHTML = navItems.map(item => `
@@ -1130,7 +1312,7 @@
     function render() {
       // Save scroll positions across potential containers
       const scrolls = [];
-      ['.home-view', '.list-content', '.cal-view', '#sidebar', '.grid-mobile'].forEach(sel => {
+      ['.home-view', '.home-v2-board', '.list-content', '.cal-view', '#sidebar', '.grid-mobile'].forEach(sel => {
         const el = document.querySelector(sel);
         if (el) scrolls.push({ sel, top: el.scrollTop });
       });
