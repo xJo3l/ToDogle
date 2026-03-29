@@ -12,6 +12,7 @@
 
       const svgHome = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`;
       const svgCal = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+      const svgAi = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3z"></path><path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14z"></path><path d="M5 14l.9 2.1L8 17l-2.1.9L5 20l-.9-2.1L2 17l2.1-.9L5 14z"></path></svg>`;
       const svgStar = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
       const svgOvd = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
       const svgComp = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
@@ -29,6 +30,7 @@
         ${sidebarToggleHtml}
       </div>
       <a href="#" class="sb-nav-item${currentView === 'home' ? ' active' : ''}" data-action="nav" data-view="home">${svgHome} Home</a>
+      <a href="#" class="sb-nav-item${currentView === 'ai' ? ' active' : ''}" data-action="nav" data-view="ai">${svgAi} AI</a>
       <a href="#" class="sb-nav-item${currentView === 'calendar' ? ' active' : ''}" data-action="nav" data-view="calendar">${svgCal} Calendar</a>
       <a href="#" class="sb-nav-item${currentView === 'important' ? ' active' : ''}" data-action="nav" data-view="important">${svgStar} Important</a>
       <a href="#" class="sb-nav-item${currentView === 'overdue' ? ' active' : ''}" data-action="nav" data-view="overdue">${svgOvd} Overdue ${ovdBadge}</a>
@@ -131,11 +133,12 @@
     let lastRenderedView = null;
     function renderMainContent() {
       const mc = document.getElementById('mainContent');
-      if (currentView === 'calendar') mc.classList.add('full-width-view');
+      if (currentView === 'calendar' || currentView === 'ai') mc.classList.add('full-width-view');
       else mc.classList.remove('full-width-view');
 
       if (currentView === 'home') mc.innerHTML = buildHomeView();
       else if (currentView === 'calendar') mc.innerHTML = buildCalendarView();
+      else if (currentView === 'ai') mc.innerHTML = buildAiView();
       else if (currentView === 'important') mc.innerHTML = buildImportantView();
       else if (currentView === 'overdue') mc.innerHTML = buildOverdueView();
       else if (currentView === 'completed') mc.innerHTML = buildCompletedView();
@@ -508,6 +511,125 @@
 
       html += `</div>`;
       return html;
+    }
+
+    function buildAiView() {
+      const isMobile = window.innerWidth <= 768;
+      const chats = (state.aiChats || []).slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+      const activeChat = getActiveAiChat();
+      const pendingFiles = state.aiPendingFiles || [];
+      const messageHtml = activeChat ? activeChat.messages.map(msg => `
+        <div class="ai-message ${msg.role}">
+          <div class="ai-bubble-wrap">
+            <div class="ai-bubble">${escHtml(msg.text).replace(/\n/g, '<br>')}</div>
+          </div>
+        </div>
+      `).join('') : '';
+
+      const chatsHtml = chats.length
+        ? chats.map(chat => `
+          <div class="ai-session-item${chat.id === state.activeAiChatId ? ' active' : ''}" data-action="open-ai-chat" data-id="${chat.id}">
+            <div class="ai-session-main">
+              <div class="ai-session-title">${escHtml(chat.title || 'New chat')}</div>
+              <div class="ai-session-date">${formatChatDate(chat.updatedAt || chat.createdAt)}</div>
+            </div>
+            <div class="ai-session-more-wrap">
+              <button class="ai-session-more" data-action="toggle-ai-chat-menu" data-id="${chat.id}" title="More options" type="button">...</button>
+              <div class="ai-chat-menu" id="aiChatMenu-${chat.id}">
+                <button class="ai-chat-menu-btn" data-action="rename-ai-chat" data-id="${chat.id}" type="button">Rename</button>
+                <button class="ai-chat-menu-btn danger" data-action="delete-ai-chat" data-id="${chat.id}" type="button">Delete</button>
+              </div>
+            </div>
+          </div>
+        `).join('')
+        : `<div class="ai-session-empty">No chats yet</div>`;
+
+      return `
+        <div class="ai-view">
+          <div class="ai-shell">
+            <aside class="ai-sidebar">
+              <div class="ai-sidebar-top">
+                ${isMobile ? `
+                <button class="mobile-menu-btn" data-action="toggle-mobile-sidebar">
+                  <span style="font-size: 24px; line-height: 1;">☰</span>
+                </button>` : ''}
+                <div class="ai-sidebar-head">
+                  <div class="ai-sidebar-title">Chats</div>
+                  <button class="ai-new-chat-btn" data-action="new-ai-chat">+ New Chat</button>
+                </div>
+                <div class="ai-sidebar-sub">ToDogle AI threads</div>
+              </div>
+              <div class="ai-sessions-list">${chatsHtml}</div>
+            </aside>
+            <section class="ai-chat-panel">
+              <div class="ai-chat-header">
+                <div class="ai-chat-heading">
+                  <div class="ai-chat-title">${escHtml(activeChat?.title || 'AI Workspace')}</div>
+                  <div class="ai-chat-subtitle">${activeChat ? formatChatDate(activeChat.updatedAt || activeChat.createdAt) : 'ToDogle'}</div>
+                </div>
+                <div class="ai-chat-badges">
+                  <span class="ai-chat-badge">Planner</span>
+                  <span class="ai-chat-badge">Tasks aware</span>
+                </div>
+              </div>
+              ${activeChat ? `
+                <div class="ai-thread">
+                  <div class="ai-thread-inner">${messageHtml}</div>
+                </div>
+              ` : `
+                <div class="ai-empty-state">
+                  <div class="ai-empty-title">Select a chat or start a new one</div>
+                  <div class="ai-empty-sub">Your AI planning conversations will appear here.</div>
+                </div>
+              `}
+              <div class="ai-composer">
+                <div class="ai-composer-shell">
+                  <input type="file" id="aiFileInput" multiple style="display:none">
+                  ${pendingFiles.length ? `
+                    <div class="ai-file-list">
+                      ${pendingFiles.map((file, idx) => `
+                        <div class="ai-file-chip">
+                          <span class="ai-file-name">${escHtml(file.name)}</span>
+                          <button class="ai-file-remove" data-action="remove-ai-file" data-idx="${idx}" aria-label="Remove file">×</button>
+                        </div>
+                      `).join('')}
+                    </div>
+                  ` : ''}
+                  <textarea id="aiPromptInput" class="ai-prompt-input" placeholder="Ask AI to plan your goals, organize tasks, or map out your next moves..."></textarea>
+                  <div class="ai-composer-row">
+                    <div class="ai-bottom-controls">
+                      <button class="ai-tool-btn" data-action="open-ai-file-picker" aria-label="Add files">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="12" y1="5" x2="12" y2="19"></line>
+                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                      </button>
+                      <div class="ai-mode-wrap">
+                        <button class="ai-mode-select" data-action="toggle-ai-mode-menu">
+                          ${state.aiResponseMode === 'fast' ? 'Fast' : 'Planning'}
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </button>
+                        <div class="ai-mode-menu" id="aiModeMenu">
+                          <button class="ai-mode-option${state.aiResponseMode === 'planning' ? ' active' : ''}" data-action="set-ai-mode" data-mode="planning">Planning</button>
+                          <button class="ai-mode-option${state.aiResponseMode === 'fast' ? ' active' : ''}" data-action="set-ai-mode" data-mode="fast">Fast</button>
+                        </div>
+                      </div>
+                    </div>
+                    <button class="ai-send-btn" data-action="send-ai-prompt" aria-label="Send">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                        <polyline points="5 12 12 5 19 12"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      `;
     }
 
     function buildDayView(date) {

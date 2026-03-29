@@ -46,8 +46,8 @@
       if (e.target.closest('.sb-settings-icon') == null && e.target.closest('.settings-dropdown') == null) {
         document.getElementById('sbSettings')?.classList.remove('show');
       }
-      if (!e.target.closest('.top-add-btn') && !e.target.closest('.list-more-btn') && !e.target.closest('.header-dropdown') && !e.target.closest('.sb-list-more') && !e.target.closest('.sb-dropdown') && !e.target.closest('.group-dropdown')) {
-        document.querySelectorAll('.header-dropdown, .sb-dropdown, .group-dropdown').forEach(d => d.classList.remove('show'));
+      if (!e.target.closest('.top-add-btn') && !e.target.closest('.list-more-btn') && !e.target.closest('.header-dropdown') && !e.target.closest('.sb-list-more') && !e.target.closest('.sb-dropdown') && !e.target.closest('.group-dropdown') && !e.target.closest('.ai-mode-wrap') && !e.target.closest('.ai-session-more-wrap')) {
+        document.querySelectorAll('.header-dropdown, .sb-dropdown, .group-dropdown, .ai-mode-menu, .ai-chat-menu').forEach(d => d.classList.remove('show'));
       }
       if (!btn) return;
       const a = btn.dataset.action;
@@ -553,6 +553,116 @@
           disp.classList.remove('active');
         }
       }
+      else if (a === 'new-ai-chat') {
+        const newChat = createAiSession();
+        state.aiChats.unshift(newChat);
+        state.activeAiChatId = newChat.id;
+        saveState();
+        renderMainContent();
+        setTimeout(() => {
+          const thread = document.querySelector('.ai-thread');
+          if (thread) thread.scrollTop = thread.scrollHeight;
+          document.getElementById('aiPromptInput')?.focus();
+        }, 30);
+      }
+      else if (a === 'open-ai-chat') {
+        state.activeAiChatId = btn.dataset.id;
+        saveState();
+        renderMainContent();
+        setTimeout(() => {
+          const thread = document.querySelector('.ai-thread');
+          if (thread) thread.scrollTop = thread.scrollHeight;
+          document.getElementById('aiPromptInput')?.focus();
+        }, 30);
+      }
+      else if (a === 'toggle-ai-chat-menu') {
+        e.stopPropagation();
+        document.querySelectorAll('.ai-chat-menu').forEach(d => d.classList.remove('show'));
+        document.getElementById('aiChatMenu-' + btn.dataset.id)?.classList.toggle('show');
+      }
+      else if (a === 'rename-ai-chat') {
+        e.stopPropagation();
+        const chatId = btn.dataset.id;
+        const chat = (state.aiChats || []).find(c => c.id === chatId);
+        if (!chat) return;
+        const nextTitle = prompt('Rename chat', chat.title || 'New chat');
+        if (nextTitle === null) return;
+        const trimmed = nextTitle.trim();
+        if (!trimmed) return;
+        chat.title = trimmed;
+        chat.updatedAt = Date.now();
+        saveState();
+        renderMainContent();
+      }
+      else if (a === 'delete-ai-chat') {
+        e.stopPropagation();
+        const chatId = btn.dataset.id;
+        state.aiChats = (state.aiChats || []).filter(chat => chat.id !== chatId);
+        if (state.activeAiChatId === chatId) state.activeAiChatId = null;
+        saveState();
+        renderMainContent();
+      }
+      else if (a === 'open-ai-file-picker') {
+        document.getElementById('aiFileInput')?.click();
+      }
+      else if (a === 'remove-ai-file') {
+        const idx = parseInt(btn.dataset.idx, 10);
+        if (!Number.isNaN(idx)) {
+          state.aiPendingFiles.splice(idx, 1);
+          saveState();
+          renderMainContent();
+        }
+      }
+      else if (a === 'toggle-ai-mode-menu') {
+        e.stopPropagation();
+        document.querySelectorAll('.ai-mode-menu').forEach(d => d.classList.remove('show'));
+        document.getElementById('aiModeMenu')?.classList.toggle('show');
+      }
+      else if (a === 'set-ai-mode') {
+        const mode = btn.dataset.mode === 'fast' ? 'fast' : 'planning';
+        state.aiResponseMode = mode;
+        saveState();
+        renderMainContent();
+      }
+      else if (a === 'send-ai-prompt') {
+        const input = document.getElementById('aiPromptInput');
+        const text = (input?.value || '').trim();
+        const files = state.aiPendingFiles || [];
+        if (!text && files.length === 0) return;
+        let activeChat = getActiveAiChat();
+        if (!activeChat) {
+          activeChat = createAiSession();
+          state.aiChats.unshift(activeChat);
+          state.activeAiChatId = activeChat.id;
+        }
+        const userText = text || 'Shared files';
+        const userDisplay = files.length
+          ? `${userText}\n\nFiles: ${files.map(f => f.name).join(', ')}`
+          : userText;
+        activeChat.messages.push({ id: generateId(), role: 'user', text: userDisplay, timestamp: Date.now() });
+        activeChat.messages.push({
+          id: generateId(),
+          role: 'assistant',
+          text: buildAiReply(text || userText, state.aiResponseMode, files),
+          timestamp: Date.now() + 1
+        });
+        activeChat.title = getAiSessionTitle(activeChat.messages);
+        activeChat.updatedAt = Date.now() + 1;
+        state.aiPendingFiles = [];
+        saveState();
+        renderMainContent();
+        setTimeout(() => {
+          const thread = document.querySelector('.ai-thread');
+          const nextInput = document.getElementById('aiPromptInput');
+          const fileInput = document.getElementById('aiFileInput');
+          if (thread) thread.scrollTop = thread.scrollHeight;
+          if (nextInput) {
+            nextInput.value = '';
+            nextInput.focus();
+          }
+          if (fileInput) fileInput.value = '';
+        }, 30);
+      }
       else if (a === 'qt-toggle') {
         const id = btn.dataset.id;
         if (qtExpandedIds.has(id)) qtExpandedIds.delete(id);
@@ -597,6 +707,17 @@
             saveState(); render();
           }
         }
+      } else if (e.target.id === 'aiFileInput') {
+        const picked = Array.from(e.target.files || []).map(file => ({
+          id: generateId(),
+          name: file.name,
+          size: file.size,
+          type: file.type || ''
+        }));
+        state.aiPendingFiles = [...(state.aiPendingFiles || []), ...picked].slice(0, 6);
+        saveState();
+        renderMainContent();
+        setTimeout(() => document.getElementById('aiPromptInput')?.focus(), 30);
       }
     });
 
@@ -629,6 +750,12 @@
           }
         }
         if (e.key === 'Escape') { addingTaskIn = null; render(); }
+      }
+      else if (currentView === 'ai' && e.target.id === 'aiPromptInput') {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          document.querySelector('[data-action="send-ai-prompt"]')?.click();
+        }
       }
     });
 
